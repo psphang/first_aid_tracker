@@ -120,27 +120,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item Name</th>
+                    <th>Expiry Date</th>
+                    <th>Status</th>
+                    <th>Remove</th> <!-- For the remove button -->
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+
         items.sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
-        items.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'item';
-
+        items.forEach((item, index) => {
             const { status, statusText } = getItemStatus(item.expiry_date);
-
-            itemElement.innerHTML = `
-                <div class="item-details">
-                    <span class="item-name">${item.name}</span>
-                    <span class="item-expiry">Expires: ${item.expiry_date}</span>
-                </div>
-                <div class="item-status-container">
-                    <span class="item-status ${status}">${statusText}</span>
-                    <button class="remove-item-btn" data-item-id="${item.id}">✖</button>
-                </div>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.name}</td>
+                <td>${item.expiry_date}</td>
+                <td><span class="item-status ${status}">${statusText}</span></td>
+                <td><button class="remove-item-btn" data-item-id="${item.id}">✖</button></td>
             `;
-
-            itemList.appendChild(itemElement);
+            tbody.appendChild(row);
         });
+
+        itemList.appendChild(table);
         console.log('renderItems: Items rendered.');
 
         // Add event listeners to new remove buttons
@@ -240,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         table.innerHTML = `
             <thead>
                 <tr>
+                    <th>No.</th>
                     <th>Kit ID</th>
                     <th>Item Name</th>
                     <th>Expiry Date</th>
@@ -253,10 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         items.sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
-        items.forEach(item => {
+        items.forEach((item, index) => {
             const { status, statusText } = getItemStatus(item.expiry_date);
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td>${index + 1}</td>
                 <td>${item.kit_id}</td>
                 <td>${item.name}</td>
                 <td>${item.expiry_date}</td>

@@ -177,3 +177,26 @@ button:disabled {
 #all-items-list tr:nth-child(even) {
     background-color: #f2f2f2;
 }
+
+/* Kit Item List Table */
+#item-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#item-list th,
+#item-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#item-list th {
+    background-color: #007bff;
+    color: white;
+}
+
+#item-list tr:nth-child(even) {
+    background-color: #f2f2f2;
+}

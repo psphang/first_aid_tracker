@@ -86,6 +86,10 @@ async def serve_kit_page(kit_id: str):
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+@app.get("/download/first_aid_kit.json")
+async def download_first_aid_kit():
+    return FileResponse(DATA_FILE, media_type="application/json", filename="first_aid_kit.json")
+
 # --- Main ---
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
