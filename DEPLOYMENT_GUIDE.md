@@ -9,6 +9,10 @@ Follow these steps every time you want to update your application:
 1.  **Make Local Code Changes:**
     *   Open your project files in the `E:/geminiCLI/first_aid_tracker` directory using your preferred code editor.
     *   Make all the necessary modifications to your Python (`.py`), JavaScript (`.js`), HTML (`.html`), CSS (`.css`), or any other relevant files.
+    *   For example, you might have:
+        *   Added sequence numbering to item lists in `static/app.js`.
+        *   Implemented a download endpoint for `first_aid_kit.json` in `main.py`.
+        *   Adjusted styling in `static/styles.css` for consistent table views.
     *   Save all your changes.
 
 2.  **Navigate to Your Project Directory:**
@@ -30,11 +34,11 @@ Follow these steps every time you want to update your application:
         ```bash
         git commit -m "Your descriptive commit message here"
         ```
-        *   **Example messages:**
+        *   **Example messages (ensure quotes are used for multi-word messages):**
             *   `git commit -m "Feat: Added expiry date validation"`
             *   `git commit -m "Fix: Corrected item removal bug"`
             *   `git commit -m "Refactor: Improved API endpoint for kit items"`
-            *   `git commit -m "Docs: Updated deployment guide"`
+            *   `git commit -m "Docs: Updated deployment guide and added new feature examples"`
 
 5.  **Push Your Changes to GitHub (Deploy):**
     *   Send your local commits from your computer to your remote GitHub repository (`https://github.com/psphang/first_aid_tracker.git`).
