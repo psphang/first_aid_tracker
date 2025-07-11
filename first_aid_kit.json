@@ -1,3 +1,24 @@
 {
-  
+  "PUD-Office": [
+    {
+      "id": "id_1752126908383",
+      "name": "Eye Wash",
+      "expiry_date": "2027-11-01"
+    },
+    {
+      "id": "id_1752126988352",
+      "name": "Yellow Lotion",
+      "expiry_date": "2027-11-01"
+    },
+    {
+      "id": "id_1752127028480",
+      "name": "Antiseptik Dettol",
+      "expiry_date": "2028-01-01"
+    },
+    {
+      "id": "id_1752127077488",
+      "name": "Antiseptic Cream",
+      "expiry_date": "2027-06-01"
+    }
+  ]
 }
