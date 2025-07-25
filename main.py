@@ -270,6 +270,10 @@ async def serve_edit_items_page():
 async def download_first_aid_kit():
     return FileResponse(DATA_FILE, media_type="application/json", filename="first_aid_kit.json")
 
+@app.get("/download/firstIAiditem.json")
+async def download_first_aid_item_file():
+    return FileResponse(ITEMS_FILE, media_type="application/json", filename="firstIAiditem.json")
+
 # --- Main ---
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
