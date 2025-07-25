@@ -19,13 +19,16 @@
                 <input type="text" id="kit-id-input" placeholder="e.g., WAREHOUSE-A-01">
                 <button id="enter-kit-btn">Enter Kit</button>
             </div>
-            <button id="view-all-items-btn">View All Items</button>
+            <div class="link-container">
+                <a href="#" id="view-all-items-btn">View All Items</a>
+                <a href="/edit_items" id="edit-first-aid-items-btn">Edit First-Aid Items List</a>
+            </div>
         </div>
 
         <!-- All Items View (Hidden by default) -->
         <div id="all-items-view" class="hidden">
             <h2>All Items Across All Kits</h2>
-            <button id="back-to-kit-selection-btn">Back to Kit Selection</button>
+            <a href="#" id="back-to-kit-selection-btn">Back to Kit Selection</a>
             <div id="all-items-list"></div>
         </div>
 
@@ -33,19 +36,27 @@
         <div id="kit-management-view" class="hidden">
             <div class="header">
                 <h2 id="kit-title"></h2>
-                <button id="switch-kit-btn">Switch Kit</button>
+                <div id="last-edited-date"></div>
+                <a href="#" id="switch-kit-btn">Switch Kit</a>
             </div>
 
             <div id="item-list">
                 <!-- Items will be dynamically inserted here -->
             </div>
 
-            <div class="form-container">
+            <form id="add-item-form" class="form-container">
                 <h3>Add New Item</h3>
-                <input type="text" id="item-name-input" placeholder="Scan or type item name/barcode">
-                <input type="date" id="expiry-date-input">
-                <button id="add-item-btn">Add Item</button>
-            </div>
+                <select id="item-select"></select>
+                <div id="expiry-date-container" style="display: none;">
+                    <label for="expiry-date-input">Expiry Date</label>
+                    <input type="date" id="expiry-date-input">
+                </div>
+                <div id="quantity-container">
+                    <label for="quantity-input">Quantity</label>
+                    <input type="number" id="quantity-input" min="1" value="1">
+                </div>
+                <button type="submit">Add Item</button>
+            </form>
         </div>
 
     </div>

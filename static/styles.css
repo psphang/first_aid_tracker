@@ -15,7 +15,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 600px;
+    max-width: 800px; /* Increased max-width for better layout */
     box-sizing: border-box;
 }
 
@@ -38,11 +38,109 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    background-color: #e9ecef; /* Light gray background for header */
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+#kit-title {
+    color: #0056b3; /* Darker blue for kit title */
+    font-size: 1.8em;
+    margin: 0;
+}
+
+#last-edited-items-date {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+#today-check-status {
+    font-weight: bold;
+    margin-left: 15px;
+}
+
+.check-records-section {
+    background-color: #f8f9fa; /* Lighter background for check records */
+    border: 1px solid #e2e6ea;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.check-records-section h3 {
+    color: #343a40;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+#check-records-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#check-records-list li {
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+#add-item-form {
+    background-color: #e9f7ef; /* Light green background for add item form */
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+#add-item-form h3 {
+    color: #28a745;
+    margin-top: 0;
+    margin-bottom: 15px;
 }
 
 #all-items-view h2 {
     text-align: center;
     margin-bottom: 20px;
+}
+
+/* Link container for left alignment */
+.link-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align items to the left */
+    width: 100%; /* Ensure the container takes full width */
+    padding: 0 20px; /* Add some padding */
+    box-sizing: border-box; /* Include padding in the width calculation */
+}
+
+.link-container a,
+#back-to-kit-selection-btn,
+#back-to-main-btn {
+    text-decoration: none;
+    color: #007bff;
+    margin-bottom: 10px; /* Add some space between the links */
+}
+
+.link-container a:hover,
+#back-to-kit-selection-btn:hover,
+#back-to-main-btn:hover {
+    text-decoration: underline;
+}
+
+.expand-collapse-buttons a {
+    text-decoration: none;
+    color: #007bff;
+    margin-right: 10px;
+}
+
+.expand-collapse-buttons a:hover {
+    text-decoration: underline;
 }
 
 /* Form elements */
@@ -55,6 +153,8 @@ body {
 
 input[type="text"],
 input[type="date"],
+input[type="number"],
+select,
 button {
     padding: 10px;
     border-radius: 4px;
@@ -78,48 +178,89 @@ button:disabled {
     cursor: not-allowed;
 }
 
-/* Item List */
-#item-list {
+/* Item Lists */
+#item-list,
+#all-items-list {
     border: 1px solid #eee;
     border-radius: 4px;
     padding: 10px;
-    max-height: 300px;
+    max-height: 400px; /* Increased max-height */
     overflow-y: auto;
     background-color: #f9f9f9;
 }
 
-.item {
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: middle; /* Align content vertically */
+}
+
+th {
+    background-color: #007bff;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+/* Column Widths */
+.qty-column-view {
+    width: 32px; /* Set a fixed width for the quantity column in all items view */
+}
+
+.qty-column {
+    width: 60px; /* Set a fixed width for the quantity column */
+}
+
+/* Quantity Controls */
+.qty-controls {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
 }
 
-.item:last-child {
-    border-bottom: none;
-}
-
-.item-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.item-name {
-    font-weight: bold;
-}
-
-.item-expiry {
+.qty-btn {
+    background-color: transparent;
+    color: #007bff;
+    border: none;
+    padding: 2px 5px;
+    border-radius: 4px;
+    cursor: pointer;
     font-size: 0.9em;
-    color: #666;
+    line-height: 1;
 }
 
-.item-status-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.qty-btn:hover {
+    background-color: #007bff;
+    color: white;
 }
 
+.qty-input {
+    width: 30px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 0 3px;
+    -moz-appearance: textfield; /* Firefox */
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Status Indicators */
 .item-status {
     padding: 5px 8px;
     border-radius: 4px;
@@ -132,7 +273,7 @@ button:disabled {
     background-color: #28a745; /* Green */
 }
 
-.status-soon {
+.status-expires-soon {
     background-color: #ffc107; /* Yellow */
     color: #333;
 }
@@ -141,62 +282,72 @@ button:disabled {
     background-color: #dc3545; /* Red */
 }
 
-.remove-item-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+.status-empty {
+    background-color: #6c757d; /* Gray */
+}
+
+.status-invalid {
+    background-color: #ffc107; /* Yellow */
+}
+
+.category-container {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.category-row td {
+    background-color: #e0f2f7; /* Lighter background color */
+    color: #333; /* Darker text for contrast */
+    font-weight: bold;
+    text-align: left; /* Align text to the left */
+    padding: 10px;
     cursor: pointer;
+}
+
+.category-row:hover td {
+    background-color: #0056b3;
+}
+
+.category-row::after {
+    content: '\25B2'; /* Upwards triangle */
     font-size: 0.8em;
+    transition: transform 0.3s ease-in-out;
+    margin-left: 10px; /* Add some space between text and arrow */
+    display: inline-block; /* Ensure it respects margin-left */
 }
 
-.remove-item-btn:hover {
-    background-color: #c82333;
+.category-row.collapsed::after {
+    transform: rotate(180deg);
 }
 
-/* All Items Table */
-#all-items-list table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+.category-row.collapsed::after {
+    transform: rotate(180deg);
 }
 
-#all-items-list th,
-#all-items-list td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+.expand-collapse-buttons {
+    margin-bottom: 10px;
 }
 
-#all-items-list th {
-    background-color: #007bff;
-    color: white;
+
+.table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease-in-out;
 }
 
-#all-items-list tr:nth-child(even) {
-    background-color: #f2f2f2;
+.category-container.collapsed .table-container {
+    max-height: 0;
 }
 
-/* Kit Item List Table */
-#item-list table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+.form-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: center;
 }
 
-#item-list th,
-#item-list td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-}
-
-#item-list th {
-    background-color: #007bff;
-    color: white;
-}
-
-#item-list tr:nth-child(even) {
-    background-color: #f2f2f2;
+.form-grid label {
+    text-align: right;
 }

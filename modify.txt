@@ -1,0 +1,3 @@
+Review 14
+1. All item view : The item column softing is work , apply this softing for kit id view and edit item view.
+2. Edit item view : Press on category grouping header, the function on expnad/collapse is work apply this to allitem view and kit id view 

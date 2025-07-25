@@ -1,5 +1,6 @@
+
 document.addEventListener('DOMContentLoaded', () => {
-    
+    console.log('DOMContentLoaded event fired.');
     // --- DOM Elements ---
     const kitSelectionView = document.getElementById('kit-selection-view');
     const kitManagementView = document.getElementById('kit-management-view');
@@ -92,20 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
             acc[category].push(item);
             return acc;
         }, {});
-
-        const sortedCategories = Object.keys(groupedItems).sort();
+        console.log('populateItemSelect: groupedItems =', groupedItems);
 
         sortedCategories.forEach(category => {
             const optgroup = document.createElement('optgroup');
             optgroup.label = category;
 
-            const sortedCategoryItems = [...groupedItems[category]].sort((a, b) => {
-                const itemNoA = parseInt(a['Item#'], 10);
-                const itemNoB = parseInt(b['Item#'], 10);
-                return itemNoA - itemNoB;
-            });
-
-            sortedCategoryItems.forEach(item => {
+            groupedItems[category].forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.Item;
                 option.textContent = `${item['Item#']} ${item.Item}`;
@@ -148,13 +142,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Kit data loaded:', kitData);
             renderItems(kitData.items);
             lastEditedDate.textContent = `Last Edited: ${kitData.last_edited || 'N/A'}`;
+
         } catch (error) {
             console.error('Error loading items:', error);
         }
     }
 
-    function renderItems(groupedItems, sortConfig = { key: 'expiry_date', order: 'asc' }) {
+        function renderItems(groupedItems, sortConfig = { key: 'expiry_date', order: 'asc' }) {
         console.log('renderItems received groupedItems:', groupedItems);
+        console.log('renderItems called with groupedItems:', groupedItems);
         itemList.innerHTML = '';
         if (Object.keys(groupedItems).length === 0) {
             itemList.innerHTML = '<p>This kit is empty.</p>';
@@ -164,8 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const expandCollapseContainer = document.createElement('div');
         expandCollapseContainer.classList.add('expand-collapse-buttons');
         expandCollapseContainer.innerHTML = `
-            <a href="#" id="expand-all-kit">Expand All</a>
-            <a href="#" id="collapse-all-kit">Collapse All</a>
+            <button id="expand-all-kit">Expand All</button>
+            <button id="collapse-all-kit">Collapse All</button>
         `;
         itemList.appendChild(expandCollapseContainer);
 
@@ -174,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <thead>
                 <tr>
                     <th>No.</th>
-                    <th data-sort="item_no">Item# ${sortConfig.key === 'item_no' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Item#</th>
                     <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
                     <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
                     <th class="qty-column" data-sort="qty">Qty ${sortConfig.key === 'qty' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
@@ -188,15 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let itemCounter = 0;
 
         console.log('Categories in groupedItems:', Object.keys(groupedItems));
-        const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
-            const aHasExpiring = groupedItems[a].some(item => item.Expiring === 'Yes');
-            const bHasExpiring = groupedItems[b].some(item => item.Expiring === 'Yes');
-            if (aHasExpiring && !bHasExpiring) return -1;
-            if (!aHasExpiring && bHasExpiring) return 1;
-            return a.localeCompare(b);
-        });
-
-        for (const category of sortedCategories) {
+        console.log('Categories in groupedItems:', Object.keys(groupedItems));
+        for (const category in groupedItems) {
             const categoryRow = document.createElement('tr');
             categoryRow.classList.add('category-row');
             categoryRow.dataset.category = category;
@@ -207,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach((item) => {
                 itemCounter++;
                 const row = document.createElement('tr');
-                const sanitizedCategory = sanitizeClassName(category);
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                 row.classList.add(`item-row`, `category-${sanitizedCategory}`);
                 const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
                 row.innerHTML = `
@@ -241,12 +230,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.item-row').forEach(row => row.style.display = 'none');
             tbody.querySelectorAll('.category-row').forEach(row => row.classList.add('collapsed'));
         });
-
+        
         tbody.querySelectorAll('.category-row').forEach(row => {
             row.addEventListener('click', () => {
                 const category = row.dataset.category;
                 row.classList.toggle('collapsed');
-                tbody.querySelectorAll(`.item-row.category-${sanitizeClassName(category)}`).forEach(itemRow => {
+                tbody.querySelectorAll(`.item-row.category-${category}`).forEach(itemRow => {
                     itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
                 });
             });
@@ -261,54 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.remove-item-btn').forEach(btn => {
             btn.addEventListener('click', (e) => removeItem(e.target.dataset.itemId));
         });
-
-        // Add sorting event listeners for Kit ID view
-        itemList.querySelectorAll('th[data-sort]').forEach(th => {
-            th.addEventListener('click', (event) => {
-                const sortKey = th.dataset.sort;
-                if (sortConfig.key === sortKey) {
-                    sortConfig.order = sortConfig.order === 'asc' ? 'desc' : 'asc';
-                } else {
-                    sortConfig.key = sortKey;
-                    sortConfig.order = 'asc';
-                }
-                // Re-render items with new sort configuration
-                const currentItems = Object.values(groupedItems).flat(); // Flatten grouped items for sorting
-                renderItems(groupAndSortItems(currentItems, sortConfig), sortConfig);
-            });
-        });
-    }
-
-    // Helper function to group and sort items for Kit ID view
-    function groupAndSortItems(items, sortConfig) {
-        const sortedItems = [...items].sort((a, b) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
-
-            if (sortConfig.key === 'expiry_date') {
-                if (!valA) return 1;
-                if (!valB) return -1;
-                return sortConfig.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            } else if (sortConfig.key === 'item_no') {
-                const numA = parseInt(valA, 10);
-                const numB = parseInt(valB, 10);
-                return sortConfig.order === 'asc' ? numA - numB : numB - numA;
-            } else if (typeof valA === 'string') {
-                return sortConfig.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            } else {
-                return sortConfig.order === 'asc' ? valA - valB : valB - valA;
-            }
-        });
-
-        const grouped = {};
-        sortedItems.forEach(item => {
-            const category = item.category || 'Uncategorized';
-            if (!grouped[category]) {
-                grouped[category] = [];
-            }
-            grouped[category].push(item);
-        });
-        return grouped;
     }
 
     async function addItem(e) {
@@ -330,12 +271,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (isNaN(qty) || qty < 1) {
-            alert('Please enter a valid quantity.');
+            alert('Please provide a valid quantity.');
             return;
         }
 
         const newItem = {
-            id: `item-${Date.now()}`, // Simple unique ID
+            id: `id_${new Date().getTime()}`,
             name,
             item_no,
             expiry_date,
@@ -343,23 +284,16 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
-            const response = await fetch(`/api/kits/${currentKitId}`, {
+            await fetch(`/api/kits/${currentKitId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newItem)
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to add item');
-            }
-
-            await loadItems(); // Reload the list
-            addItemForm.reset(); // Reset the form
-            expiryDateContainer.style.display = 'none'; // Hide expiry date field
-
+            addItemForm.reset();
+            handleItemSelection();
+            await loadItems();
         } catch (error) {
             console.error('Error adding item:', error);
-            alert('Could not add item. Please try again.');
         }
     }
 
@@ -379,6 +313,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
                 input.value = 0;
                 updateItemQuantity(itemId, 0);
+            } else {
+                // User cancelled, do nothing
             }
         } else {
             input.value = currentQty;
@@ -442,22 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const allItems = await response.json();
             console.log('API response for all items:', allItems);
-            // Check if allItems is an object (grouped data) or an array (flat data)
-            if (Array.isArray(allItems)) {
-                console.error('Expected grouped data for all items, but received an array.', allItems);
-                // If it's still an array, we need to group it here for rendering
-                const grouped = allItems.reduce((acc, item) => {
-                    const category = item.category || 'Uncategorized';
-                    if (!acc[category]) {
-                        acc[category] = [];
-                    }
-                    acc[category].push(item);
-                    return acc;
-                }, {});
-                renderAllItems(grouped);
-            } else {
-                renderAllItems(allItems);
-            }
+            renderAllItems(allItems);
             showView('all-items');
         } catch (error) {
             console.error('Error loading all items:', error);
@@ -465,19 +386,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderAllItems(groupedItems, sortConfig = { key: 'expiry_date', order: 'asc' }) {
-        console.log('renderAllItems: received groupedItems:', groupedItems);
+    function renderAllItems(items, sortConfig = { key: 'expiry_date', order: 'asc' }) {
         allItemsList.innerHTML = '';
-        if (Object.keys(groupedItems).length === 0) {
+        if (items.length === 0) {
             allItemsList.innerHTML = '<p>No items found across all kits.</p>';
             return;
         }
 
+        // Group items by category
+        const groupedItems = items.reduce((acc, item) => {
+            const category = item.category || 'Uncategorized';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(item);
+            return acc;
+        }, {});
+
+        // Sort categories alphabetically
+        const sortedCategories = Object.keys(groupedItems).sort();
+
         const expandCollapseContainer = document.createElement('div');
         expandCollapseContainer.classList.add('expand-collapse-buttons');
         expandCollapseContainer.innerHTML = `
-            <a href="#" id="expand-all-all-items">Expand All</a>
-            <a href="#" id="collapse-all-all-items">Collapse All</a>
+            <button id="expand-all-all-items">Expand All</button>
+            <button id="collapse-all-all-items">Collapse All</button>
         `;
         allItemsList.appendChild(expandCollapseContainer);
 
@@ -486,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <thead>
                 <tr>
                     <th>No.</th>
-                    <th data-sort="item_no">Item# ${sortConfig.key === 'item_no' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Item#</th>
                     <th data-sort="kit_id">Kit ID ${sortConfig.key === 'kit_id' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
                     <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
                     <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
@@ -499,16 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tbody = table.querySelector('tbody');
         let itemCounter = 0;
 
-        const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
-            const aHasExpiring = groupedItems[a].some(item => item.Expiring === 'Yes');
-            const bHasExpiring = groupedItems[b].some(item => item.Expiring === 'Yes');
-            if (aHasExpiring && !bHasExpiring) return -1;
-            if (!aHasExpiring && bHasExpiring) return 1;
-            return a.localeCompare(b);
-        });
-
         sortedCategories.forEach(category => {
-            console.log('renderAllItems: Processing category:', category);
             const categoryRow = document.createElement('tr');
             categoryRow.classList.add('category-row');
             categoryRow.dataset.category = category;
@@ -519,27 +443,272 @@ document.addEventListener('DOMContentLoaded', () => {
             const sortedCategoryItems = [...categoryItems].sort((a, b) => {
                 const valA = a[sortConfig.key];
                 const valB = b[sortConfig.key];
-
-                if (sortConfig.key === 'item_no') {
-                    const numA = parseInt(valA, 10);
-                    const numB = parseInt(valB, 10);
-                    return sortConfig.order === 'asc' ? numA - numB : numB - numA;
-                } else if (sortConfig.key === 'expiry_date') {
+                if (sortConfig.key === 'expiry_date') {
                     if (!valA) return 1;
                     if (!valB) return -1;
-                    return sortConfig.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                } else if (typeof valA === 'string') {
-                    return sortConfig.order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                } else {
-                    return sortConfig.order === 'asc' ? valA - valB : valB - valA;
                 }
+                if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+                return 0;
             });
 
             sortedCategoryItems.forEach((item) => {
                 itemCounter++;
                 const row = document.createElement('tr');
-                const sanitizedCategory = sanitizeClassName(category);
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                 row.classList.add(`item-row`, `category-${sanitizedCategory}`);
+                const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
+                row.innerHTML = `
+                    <td>${itemCounter}</td>
+                    <td>${item.item_no || ''}</td>
+                    <td>${item.kit_id}</td>
+                    <td>${item.name}</td>
+                    <td>${item.expiry_date || ''}</td>
+                    <td>${item.qty}</td>
+                    <td><span class="item-status ${statusClass}">${item.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+
+        allItemsList.appendChild(table);
+
+        document.getElementById('expand-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = '');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.remove('collapsed'));
+        });
+
+        document.getElementById('collapse-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = 'none');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.add('collapsed'));
+        });
+
+        tbody.querySelectorAll('.category-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const category = row.dataset.category;
+                row.classList.toggle('collapsed');
+                tbody.querySelectorAll(`.item-row.category-${category}`).forEach(itemRow => {
+                    itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
+                });
+            });
+        });
+
+        allItemsList.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', (event) => {
+                const sortKey = th.dataset.sort;
+                if (sortConfig.key === sortKey) {
+                    sortConfig.order = sortConfig.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig.key = sortKey;
+                    sortConfig.order = 'asc';
+                }
+                renderAllItems(items, sortConfig);
+            });
+        });
+    }""
+
+    async function addItem(e) {
+        e.preventDefault();
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        if (!selectedOption.value) {
+            alert('Please select an item.');
+            return;
+        }
+
+        const name = selectedOption.value;
+        const isExpiring = selectedOption.dataset.expiring === 'Yes';
+        const item_no = selectedOption.dataset.itemNo;
+        const expiry_date = isExpiring ? expiryDateInput.value : null;
+        const qty = parseInt(quantityInput.value, 10);
+
+        if (isExpiring && !expiry_date) {
+            alert('Please provide an expiry date.');
+            return;
+        }
+        if (isNaN(qty) || qty < 1) {
+            alert('Please provide a valid quantity.');
+            return;
+        }
+
+        const newItem = {
+            id: `id_${new Date().getTime()}`,
+            name,
+            item_no,
+            expiry_date,
+            qty
+        };
+
+        try {
+            await fetch(`/api/kits/${currentKitId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            });
+            addItemForm.reset();
+            handleItemSelection();
+            await loadItems();
+        } catch (error) {
+            console.error('Error adding item:', error);
+        }
+    }
+
+    function handleQtyChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const action = e.target.dataset.action;
+        const input = document.querySelector(`.qty-input[data-item-id="${itemId}"]`);
+        let currentQty = parseInt(input.value, 10);
+
+        if (action === 'increment') {
+            currentQty++;
+        } else if (action === 'decrement' && currentQty > 0) {
+            currentQty--;
+        }
+
+        if (currentQty === 0) {
+            if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                input.value = 0;
+                updateItemQuantity(itemId, 0);
+            } else {
+                // User cancelled, do nothing
+            }
+        } else {
+            input.value = currentQty;
+            updateItemQuantity(itemId, currentQty);
+        }
+    }
+
+    function handleQtyInputChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const newQty = parseInt(e.target.value, 10);
+        if (!isNaN(newQty) && newQty >= 0) {
+            if (newQty === 0) {
+                if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                    updateItemQuantity(itemId, 0);
+                } else {
+                    loadItems(); // Revert
+                }
+            } else {
+                updateItemQuantity(itemId, newQty);
+            }
+        } else {
+            loadItems(); // Revert on invalid input
+        }
+    }
+
+    async function updateItemQuantity(itemId, qty) {
+        try {
+            const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qty })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to update quantity');
+            }
+            await loadItems();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            alert('Could not update quantity. Please try again.');
+            loadItems();
+        }
+    }
+
+    async function removeItem(itemId) {
+        if (!confirm('Are you sure you want to permanently remove this item?')) return;
+
+        try {
+            await fetch(`/api/kits/${currentKitId}/${itemId}`, { method: 'DELETE' });
+            await loadItems();
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    }
+
+    async function loadAllItems() {
+        console.log('loadAllItems function called.');
+        try {
+            const response = await fetch('/api/all_items');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const allItems = await response.json();
+            console.log('API response for all items:', allItems);
+            renderAllItems(allItems);
+            showView('all-items');
+        } catch (error) {
+            console.error('Error loading all items:', error);
+            alert('Failed to load all items. Check console for details.');
+        }
+    }
+
+    function renderAllItems(items, sortConfig = { key: 'expiry_date', order: 'asc' }) {
+        allItemsList.innerHTML = '';
+        if (items.length === 0) {
+            allItemsList.innerHTML = '<p>No items found across all kits.</p>';
+            return;
+        }
+
+        // Group items by category
+        
+
+        // Sort categories alphabetically
+        const sortedCategories = Object.keys(groupedItems).sort();
+
+        const expandCollapseContainer = document.createElement('div');
+        expandCollapseContainer.classList.add('expand-collapse-buttons');
+        expandCollapseContainer.innerHTML = `
+            <button id="expand-all-all-items">Expand All</button>
+            <button id="collapse-all-all-items">Collapse All</button>
+        `;
+        allItemsList.appendChild(expandCollapseContainer);
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item#</th>
+                    <th data-sort="kit_id">Kit ID ${sortConfig.key === 'kit_id' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th class="qty-column-view" data-sort="qty">Qty ${sortConfig.key === 'qty' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        let itemCounter = 0;
+
+        sortedCategories.forEach(category => {
+            const categoryRow = document.createElement('tr');
+            categoryRow.classList.add('category-row');
+            categoryRow.dataset.category = category; // Add data-category attribute
+            categoryRow.innerHTML = `<td colspan="7">${category}</td>`;
+            tbody.appendChild(categoryRow);
+
+            const categoryItems = groupedItems[category];
+            
+            // Sort items within each category
+            const sortedCategoryItems = [...categoryItems].sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+
+                if (sortConfig.key === 'expiry_date') {
+                    if (!valA) return 1;
+                    if (!valB) return -1;
+                }
+
+                if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            sortedCategoryItems.forEach((item) => {
+                itemCounter++;
+                const row = document.createElement('tr');
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-'); // Sanitize category for class name
+                row.classList.add(`item-row`, `category-${sanitizedCategory}`); // Add item-row and category class
                 const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
                 row.innerHTML = `
                     <td>${itemCounter}</td>
@@ -576,6 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Add event listeners for sorting
         allItemsList.querySelectorAll('th[data-sort]').forEach(th => {
             th.addEventListener('click', (event) => {
                 const sortKey = th.dataset.sort;
@@ -585,7 +755,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sortConfig.key = sortKey;
                     sortConfig.order = 'asc';
                 }
-                renderAllItems(groupedItems, sortConfig); // Pass groupedItems directly
+                renderAllItems(items, sortConfig);
             });
         });
     }

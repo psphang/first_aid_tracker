@@ -32,7 +32,7 @@ Follow these steps every time you want to update your application:
 4.  **Commit Your Changes (Save Locally):**
     *   Create a new "snapshot" (commit) of your project with the staged changes. You **must** provide a clear and descriptive message explaining what you changed.
         ```bash
-        git commit -m "Your descriptive commit message here"
+        git commit -m "update json file"
         ```
         *   **Example messages (ensure quotes are used for multi-word messages):**
             *   `git commit -m "Feat: Added expiry date validation"`
