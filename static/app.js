@@ -72,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            firstAidItems = await response.json();
+            const data = await response.json();
+            firstAidItems = data.items; // Extract the items array
             console.log('First aid items loaded:', firstAidItems);
             populateItemSelect();
         } catch (error) {

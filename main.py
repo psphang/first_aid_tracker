@@ -90,7 +90,7 @@ def sort_key(item):
 async def get_first_aid_items():
     data = read_data(ITEMS_FILE)
     # Ensure items are sorted
-    data.get('items', []).sort(key=lambda x: x.get('Item', '').lower())
+    data.get('items', []).sort(key=lambda x: x.get('Item', '').lower()) # Sort by item name
     return data
 
 @app.get("/api/kits/{kit_id}")
@@ -205,12 +205,33 @@ async def get_all_items():
 
 @app.post("/api/firstaiditems")
 async def add_first_aid_item(item: Dict):
-    # Ensure 'categori' and 'Item#' are present, even if empty
-    item['categori'] = item.get('categori', 'Uncategorized')
+    # Ensure 'Item#' is present, even if empty
     item['Item#'] = item.get('Item#', '')
     items_data = read_data(ITEMS_FILE)
     items = items_data.get('items', [])
-    items.append(item)
+    print(f"Current items in firstIAiditem.json: {items}")
+
+    # Determine the next running number for 'No'
+    next_no = "1"
+    if items:
+        max_no = 0
+        for existing_item in items:
+            try:
+                max_no = max(max_no, int(existing_item.get('No', 0)))
+            except ValueError:
+                pass
+        next_no = str(max_no + 1)
+
+    # Create a new dictionary for the item with the desired key order
+    formatted_item = {
+        "No": next_no,
+        "Item#": item.get('Item#', ''),
+        "Item": item.get('Item', ''),
+        "category": item.get('category', 'Uncategorized'), # Ensure category is always present
+        "Expiring": item.get('Expiring', 'No') # Ensure Expiring is always present
+    }
+
+    items.append(formatted_item)
     items_data['items'] = items
     items_data['last_edited'] = datetime.now().isoformat()
     write_data(ITEMS_FILE, items_data)
