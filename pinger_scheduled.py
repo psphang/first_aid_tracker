@@ -1,109 +1,157 @@
 import requests
-import json
-import os
+import logging
 from datetime import datetime
+import os
+import json
 
-# Configuration
-BASE_URL = "https://first-aid-tracker.onrender.com/" # Assuming your FastAPI app runs on this URL and port
-DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "downloaded_data")
+# Configure logging
+logging.basicConfig(
+    filename='pinger.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-def parse_timestamp(timestamp_str):
-    """Parses an ISO format timestamp string into a datetime object."""
-    if not timestamp_str: return None
+URL = "https://first-aid-tracker.onrender.com/"
+
+LAST_DOWNLOAD_DATE_DIR = os.path.join(os.path.dirname(__file__), 'last_download_dates')
+
+def get_last_download_date(file_identifier):
+    """
+    Reads the last download datetime for a specific file from its timestamp file.
+    """
+    file_path = os.path.join(LAST_DOWNLOAD_DATE_DIR, f'last_download_date_{file_identifier}.txt')
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            date_str = f.read().strip()
+            if date_str:
+                return datetime.fromisoformat(date_str)
+    return None
+
+def set_last_download_date(file_identifier, dt):
+    """
+    Writes the last download datetime for a specific file to its timestamp file.
+    """
+    os.makedirs(LAST_DOWNLOAD_DATE_DIR, exist_ok=True)
+    file_path = os.path.join(LAST_DOWNLOAD_DATE_DIR, f'last_download_date_{file_identifier}.txt')
+    with open(file_path, 'w') as f:
+        f.write(dt.isoformat())
+
+def ping_site():
+    """
+    Sends a GET request to the specified URL and downloads files once per day if there are updates.
+    """
+    logging.info("Scheduled pinger script started.")
+
+    # Perform the regular ping
     try:
-        return datetime.fromisoformat(timestamp_str)
-    except ValueError:
-        return None
-
-def download_and_save_first_aid_kit():
-    """Downloads first_aid_kit.json and saves it with a timestamp."""
-    url = f"{BASE_URL}/download/first_aid_kit.json"
-    print(f"Attempting to download first_aid_kit.json from: {url}")
-    try:
-        response = requests.get(url)
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-        data = response.json()
-
-        # Use current timestamp for filename as first_aid_kit.json has multiple 'last_edited'
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"first_aid_kit_{timestamp}.json"
-        filepath = os.path.join(DOWNLOAD_DIR, filename)
-
-        with open(filepath, "w") as f:
-            json.dump(data, f, indent=2)
-        print(f"Downloaded and saved {filename}")
+        response = requests.get(URL)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if response.status_code == 200:
+            logging.info(f"Ping successful. Status Code: {response.status_code}")
+            print(f"[{timestamp}] Ping successful. Status Code: {response.status_code}")
+        else:
+            logging.warning(f"Ping failed with Status Code: {response.status_code}")
+            print(f"[{timestamp}] Ping failed with Status Code: {response.status_code}")
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading first_aid_kit.json: {e}")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from first_aid_kit.json: {e}")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        logging.error(f"An error occurred: {e}")
+        print(f"[{timestamp}] An error occurred: {e}")
 
-def download_and_save_first_aid_item_file():
-    """Downloads firstIAiditem.json and saves it, checking its internal last_edited timestamp."""
-    url = f"{BASE_URL}/download/firstIAiditem.json"
-    print(f"Attempting to download firstIAiditem.json from: {url}")
+    # Check for updates before downloading
+    # We will now check for updates per file
+    download_url_kit = "https://first-aid-tracker.onrender.com/download/first_aid_kit.json"
+    download_url_item = "https://first-aid-tracker.onrender.com/download/firstIAiditem.json"
+    
+    # Get the last edited date from the remote first_aid_kit.json for comparison
+    remote_first_aid_kit_last_edited = None
+    remote_first_aid_item_last_edited = None
+
+    # Fetch first_aid_kit.json
     try:
-        response = requests.get(url)
-        print(f"Response status code for firstIAiditem.json: {response.status_code}")
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-        downloaded_data = response.json()
-
-        downloaded_last_edited_str = downloaded_data.get("last_edited")
-        downloaded_last_edited = parse_timestamp(downloaded_last_edited_str)
-
-        # Find existing firstIAiditem.json files in the directory
-        existing_files = [f for f in os.listdir(DOWNLOAD_DIR) if f.startswith("firstIAiditem_") and f.endswith(".json")]
-        
-        should_save = True
-        if existing_files:
-            # Assuming we only care about the most recent existing file for comparison
-            # You might want a more sophisticated logic if multiple versions are kept
-            existing_files.sort(reverse=True) # Sort to get the latest by filename timestamp
-            latest_existing_file = existing_files[0]
-            existing_filepath = os.path.join(DOWNLOAD_DIR, latest_existing_file)
-            
+        response_kit = requests.get(download_url_kit)
+        if response_kit.status_code == 200:
             try:
-                with open(existing_filepath, "r") as f:
-                    existing_data = json.load(f)
-                existing_last_edited_str = existing_data.get("last_edited")
-                existing_last_edited = parse_timestamp(existing_last_edited_str)
-
-                if downloaded_last_edited and existing_last_edited:
-                    if downloaded_last_edited <= existing_last_edited:
-                        print(f"firstIAiditem.json not saved: Downloaded version (last_edited: {downloaded_last_edited_str}) is not newer than existing (last_edited: {existing_last_edited_str}).")
-                        should_save = False
-                    else:
-                        print(f"Downloaded firstIAiditem.json is newer (last_edited: {downloaded_last_edited_str}). Saving...")
-                elif downloaded_last_edited and not existing_last_edited:
-                    print("Existing firstIAiditem.json has no valid last_edited timestamp. Saving new version.")
-                elif not downloaded_last_edited and existing_last_edited:
-                    print("Downloaded firstIAiditem.json has no valid last_edited timestamp. Not saving if existing has one.")
-                    should_save = False # Don't save if new has no timestamp but old does
-                else:
-                    print("Neither downloaded nor existing firstIAiditem.json has a valid last_edited timestamp. Saving new version.")
-
-            except (json.JSONDecodeError, FileNotFoundError) as e:
-                print(f"Warning: Could not read or parse existing firstIAiditem.json ({latest_existing_file}): {e}. Saving new version.")
-                should_save = True
-
-        if should_save:
-            # Use current timestamp for filename, consistent with first_aid_kit.json
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"firstIAiditem_{timestamp}.json"
-            filepath = os.path.join(DOWNLOAD_DIR, filename)
-
-            with open(filepath, "w") as f:
-                json.dump(downloaded_data, f, indent=2)
-            print(f"Downloaded and saved {filename}")
+                data = json.loads(response_kit.content)
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, dict) and 'last_edited' in value:
+                            last_edited_str = value['last_edited']
+                            last_edited_dt = datetime.fromisoformat(last_edited_str)
+                            if remote_first_aid_kit_last_edited is None or last_edited_dt > remote_first_aid_kit_last_edited:
+                                remote_first_aid_kit_last_edited = last_edited_dt
+            except (json.JSONDecodeError, TypeError) as e:
+                logging.error(f"Error processing JSON from first_aid_kit.json for pre-check: {e}")
 
     except requests.exceptions.RequestException as e:
-        print(f"Error downloading firstIAiditem.json: {e}")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON from firstIAiditem.json: {e}")
+        logging.error(f"An error occurred during pre-download check for first_aid_kit.json: {e}")
+
+    # Fetch firstIAiditem.json
+    try:
+        response_item = requests.get(download_url_item)
+        if response_item.status_code == 200:
+            try:
+                data = json.loads(response_item.content)
+                if isinstance(data, dict) and 'last_edited' in data:
+                    last_edited_str = data['last_edited']
+                    remote_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
+            except (json.JSONDecodeError, TypeError) as e:
+                logging.error(f"Error processing JSON from firstIAiditem.json for pre-check: {e}")
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"An error occurred during pre-download check for firstIAiditem.json: {e}")
+
+    # Determine if a full download is needed based on individual file updates
+    should_perform_full_download = False
+
+    last_download_dt_first_aid_kit = get_last_download_date('first_aid_kit')
+    if remote_first_aid_kit_last_edited and \
+       (last_download_dt_first_aid_kit is None or remote_first_aid_kit_last_edited > last_download_dt_first_aid_kit):
+        should_perform_full_download = True
+
+    last_download_dt_first_aid_item = get_last_download_date('firstIAiditem')
+    if remote_first_aid_item_last_edited and \
+       (last_download_dt_first_aid_item is None or remote_first_aid_item_last_edited > last_download_dt_first_aid_item):
+        should_perform_full_download = True
+
+    if should_perform_full_download:
+        DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), 'downloaded_data')
+        if not os.path.exists(DOWNLOAD_DIR):
+            os.makedirs(DOWNLOAD_DIR)
+
+        files_to_download = {
+            'first_aid_kit.json': response_kit.content, 
+            'firstIAiditem.json': response_item.content
+        }
+
+        for filename, content in files_to_download.items():
+            file_identifier = os.path.splitext(filename)[0] # e.g., 'first_aid_kit'
+            
+            # Save the downloaded file with a timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            base, ext = os.path.splitext(filename)
+            dated_filename = f"{base}_{timestamp}{ext}"
+            download_path = os.path.join(DOWNLOAD_DIR, dated_filename)
+            
+            with open(download_path, 'wb') as f:
+                f.write(content)
+            
+            logging.info(f"Daily download successful for {filename}. File saved to {download_path}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Daily download successful for {filename}. File saved to {download_path}")
+
+            # Extract and save last_edited for this specific file if it's a JSON
+            if filename == 'first_aid_kit.json':
+                file_latest_last_edited = remote_first_aid_kit_last_edited
+            elif filename == 'firstIAiditem.json':
+                file_latest_last_edited = remote_first_aid_item_last_edited
+            else:
+                file_latest_last_edited = None
+
+            if file_latest_last_edited:
+                set_last_download_date(file_identifier, file_latest_last_edited)
+                logging.info(f"Saved last_edited for {filename}: {file_latest_last_edited}")
+
+    logging.info("Scheduled pinger script finished.")
+
 
 if __name__ == "__main__":
-    # Create the download directory if it doesn't exist
-    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-    print(f"Ensured download directory exists: {DOWNLOAD_DIR}")
-
-    download_and_save_first_aid_kit()
-    download_and_save_first_aid_item_file()
+    ping_site()
