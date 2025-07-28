@@ -2,41 +2,126 @@
   "PUD-Office": {
     "items": [
       {
-        "id": "id_1753253210061",
+        "id": "item-1753672107188",
+        "name": "Antiseptic Cream",
+        "item_no": "4",
+        "expiry_date": "2027-06-01",
+        "qty": 1
+      },
+      {
+        "id": "item-1753672137771",
         "name": "Eye Wash",
-        "expiry_date": "2025-08-06",
+        "item_no": "1",
+        "expiry_date": "2027-11-01",
         "qty": 1
       },
       {
-        "id": "id_1753253473461",
-        "name": "Antiseptik - Dettol",
-        "item_no": "2",
-        "expiry_date": "2025-07-30",
-        "qty": 1
-      },
-      {
-        "id": "id_1753254227789",
+        "id": "item-1753672158131",
         "name": "Yellow Lotion",
         "item_no": "3",
-        "expiry_date": "2025-10-01",
+        "expiry_date": "2027-11-01",
         "qty": 1
       },
       {
-        "id": "id_1753254240837",
-        "name": "Plaster",
-        "item_no": "5",
-        "expiry_date": null,
-        "qty": 4
+        "id": "item-1753672188419",
+        "name": "Antiseptik - Dettol",
+        "item_no": "2",
+        "expiry_date": "2028-01-01",
+        "qty": 1
       },
       {
-        "id": "id_1753254270597",
+        "id": "item-1753672280203",
+        "name": "Safety Pin",
+        "item_no": "11",
+        "expiry_date": null,
+        "qty": 12
+      },
+      {
+        "id": "item-1753672299219",
+        "name": "Scissor",
+        "item_no": "12",
+        "expiry_date": null,
+        "qty": 1
+      },
+      {
+        "id": "item-1753672312100",
+        "name": "Disposal Medical Mask",
+        "item_no": "15",
+        "expiry_date": null,
+        "qty": 2
+      },
+      {
+        "id": "item-1753672324747",
         "name": "Disposal Surgical Glove",
         "item_no": "14",
         "expiry_date": null,
+        "qty": 2
+      },
+      {
+        "id": "item-1753672350675",
+        "name": "Cotton Bud",
+        "item_no": "13",
+        "expiry_date": null,
+        "qty": 9
+      },
+      {
+        "id": "item-1753672371219",
+        "name": "Surgical Tape",
+        "item_no": "10",
+        "expiry_date": null,
         "qty": 1
+      },
+      {
+        "id": "item-1753672383625",
+        "name": "Dressing Pad - Gauze",
+        "item_no": "9",
+        "expiry_date": null,
+        "qty": 1
+      },
+      {
+        "id": "item-1753672393075",
+        "name": "Bandage - Elastic",
+        "item_no": "7",
+        "expiry_date": null,
+        "qty": 1
+      },
+      {
+        "id": "item-1753672448211",
+        "name": "Plaster",
+        "item_no": "5",
+        "expiry_date": null,
+        "qty": 7
+      },
+      {
+        "id": "item-1753672471242",
+        "name": "Dressing Pad - Cotton",
+        "item_no": "8",
+        "expiry_date": null,
+        "qty": 8
+      },
+      {
+        "id": "item-1753672481812",
+        "name": "Bandage (Triangle) / Anduh Tiga Segi",
+        "item_no": "6",
+        "expiry_date": null,
+        "qty": 1
+      },
+      {
+        "id": "item-1753672658251",
+        "name": "test a",
+        "item_no": "90",
+        "expiry_date": "2025-08-26",
+        "qty": 1
+      },
+      {
+        "id": "item-1753672675563",
+        "name": "test b",
+        "item_no": "91",
+        "expiry_date": null,
+        "qty": 0
       }
     ],
-    "last_edited": "2025-07-25T14:32:37.542776"
+    "last_edited": "2025-07-28T11:32:23.776846"
   },
   "test": {
     "items": [],

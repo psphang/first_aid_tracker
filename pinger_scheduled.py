@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 # Configuration
-BASE_URL = "http://localhost:8001" # Assuming your FastAPI app runs on this URL and port
+BASE_URL = "https://first-aid-tracker.onrender.com/" # Assuming your FastAPI app runs on this URL and port
 DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), "downloaded_data")
 
 def parse_timestamp(timestamp_str):
