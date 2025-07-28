@@ -1,8 +1,9 @@
 import requests
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import json
+import subprocess
 
 # Configure logging
 logging.basicConfig(
@@ -14,6 +15,8 @@ logging.basicConfig(
 URL = "https://first-aid-tracker.onrender.com/"
 
 LAST_DOWNLOAD_DATE_DIR = os.path.join(os.path.dirname(__file__), 'last_download_dates')
+LOCAL_DATA_FILE = os.path.join(os.path.dirname(__file__), 'first_aid_kit.json')
+LOCAL_ITEMS_FILE = os.path.join(os.path.dirname(__file__), 'firstIAiditem.json')
 
 def get_last_download_date(file_identifier):
     """
@@ -24,7 +27,10 @@ def get_last_download_date(file_identifier):
         with open(file_path, 'r') as f:
             date_str = f.read().strip()
             if date_str:
-                return datetime.fromisoformat(date_str)
+                dt = datetime.fromisoformat(date_str)
+                if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+                    return dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc)
     return None
 
 def set_last_download_date(file_identifier, dt):
@@ -77,6 +83,10 @@ def ping_site():
                         if isinstance(value, dict) and 'last_edited' in value:
                             last_edited_str = value['last_edited']
                             last_edited_dt = datetime.fromisoformat(last_edited_str)
+                            if last_edited_dt.tzinfo is None or last_edited_dt.tzinfo.utcoffset(last_edited_dt) is None:
+                                last_edited_dt = last_edited_dt.replace(tzinfo=timezone.utc)
+                            else:
+                                last_edited_dt = last_edited_dt.astimezone(timezone.utc)
                             if remote_first_aid_kit_last_edited is None or last_edited_dt > remote_first_aid_kit_last_edited:
                                 remote_first_aid_kit_last_edited = last_edited_dt
             except (json.JSONDecodeError, TypeError) as e:
@@ -94,61 +104,139 @@ def ping_site():
                 if isinstance(data, dict) and 'last_edited' in data:
                     last_edited_str = data['last_edited']
                     remote_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
+                    if remote_first_aid_item_last_edited.tzinfo is None or remote_first_aid_item_last_edited.tzinfo.utcoffset(remote_first_aid_item_last_edited) is None:
+                        remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.replace(tzinfo=timezone.utc)
+                    else:
+                        remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.astimezone(timezone.utc)
             except (json.JSONDecodeError, TypeError) as e:
                 logging.error(f"Error processing JSON from firstIAiditem.json for pre-check: {e}")
 
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred during pre-download check for firstIAiditem.json: {e}")
 
-    # Determine if a full download is needed based on individual file updates
-    should_perform_full_download = False
+    # --- Compare and Download first_aid_kit.json ---
+    local_first_aid_kit_last_edited = None
+    if os.path.exists(LOCAL_DATA_FILE):
+        try:
+            with open(LOCAL_DATA_FILE, 'r') as f:
+                local_data = json.load(f)
+                # Find the latest last_edited in the local first_aid_kit.json
+                if isinstance(local_data, dict):
+                    for key, value in local_data.items():
+                        if isinstance(value, dict) and 'last_edited' in value:
+                            last_edited_str = value['last_edited']
+                            last_edited_dt = datetime.fromisoformat(last_edited_str)
+                            if last_edited_dt.tzinfo is None or last_edited_dt.tzinfo.utcoffset(last_edited_dt) is None:
+                                last_edited_dt = last_edited_dt.replace(tzinfo=timezone.utc)
+                            else:
+                                last_edited_dt = last_edited_dt.astimezone(timezone.utc)
+                            if local_first_aid_kit_last_edited is None or last_edited_dt > local_first_aid_kit_last_edited:
+                                local_first_aid_kit_last_edited = last_edited_dt
+        except (json.JSONDecodeError, TypeError) as e:
+            logging.warning(f"Error reading local first_aid_kit.json for comparison: {e}")
 
-    last_download_dt_first_aid_kit = get_last_download_date('first_aid_kit')
-    if remote_first_aid_kit_last_edited and \
-       (last_download_dt_first_aid_kit is None or remote_first_aid_kit_last_edited > last_download_dt_first_aid_kit):
-        should_perform_full_download = True
+    logging.info(f"first_aid_kit.json: Remote last_edited: {remote_first_aid_kit_last_edited}, Local last_edited: {local_first_aid_kit_last_edited}")
+    if remote_first_aid_kit_last_edited and (local_first_aid_kit_last_edited is None or remote_first_aid_kit_last_edited > local_first_aid_kit_last_edited):
+        try:
+            with open(LOCAL_DATA_FILE, 'wb') as f:
+                f.write(response_kit.content)
+            logging.info(f"Updated {LOCAL_DATA_FILE} with newer version from remote.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Updated {LOCAL_DATA_FILE} with newer version from remote.")
+            set_last_download_date('first_aid_kit', remote_first_aid_kit_last_edited)
 
-    last_download_dt_first_aid_item = get_last_download_date('firstIAiditem')
-    if remote_first_aid_item_last_edited and \
-       (last_download_dt_first_aid_item is None or remote_first_aid_item_last_edited > last_download_dt_first_aid_item):
-        should_perform_full_download = True
-
-    if should_perform_full_download:
-        DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), 'downloaded_data')
-        if not os.path.exists(DOWNLOAD_DIR):
-            os.makedirs(DOWNLOAD_DIR)
-
-        files_to_download = {
-            'first_aid_kit.json': response_kit.content, 
-            'firstIAiditem.json': response_item.content
-        }
-
-        for filename, content in files_to_download.items():
-            file_identifier = os.path.splitext(filename)[0] # e.g., 'first_aid_kit'
-            
-            # Save the downloaded file with a timestamp
+            # Save historical copy only if updated
+            DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), 'downloaded_data')
+            os.makedirs(DOWNLOAD_DIR, exist_ok=True)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            base, ext = os.path.splitext(filename)
-            dated_filename = f"{base}_{timestamp}{ext}"
+            dated_filename = f"first_aid_kit_{timestamp}.json"
             download_path = os.path.join(DOWNLOAD_DIR, dated_filename)
-            
-            with open(download_path, 'wb') as f:
-                f.write(content)
-            
-            logging.info(f"Daily download successful for {filename}. File saved to {download_path}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Daily download successful for {filename}. File saved to {download_path}")
+            try:
+                with open(download_path, 'wb') as f:
+                    f.write(response_kit.content)
+                logging.info(f"Saved historical copy of first_aid_kit.json to {download_path}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Saved historical copy of first_aid_kit.json to {download_path}")
+            except Exception as e:
+                logging.error(f"Error saving historical copy of first_aid_kit.json to {download_path}: {e}")
 
-            # Extract and save last_edited for this specific file if it's a JSON
-            if filename == 'first_aid_kit.json':
-                file_latest_last_edited = remote_first_aid_kit_last_edited
-            elif filename == 'firstIAiditem.json':
-                file_latest_last_edited = remote_first_aid_item_last_edited
-            else:
-                file_latest_last_edited = None
+            # Run git push
+            commit_message = f"Update first_aid_kit.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            push_command = f"push_to_github.bat \"{commit_message}\"";
+            logging.info(f"Running git push command: {push_command}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub for first_aid_kit.json...")
+            try:
+                result = subprocess.run(push_command, shell=True, cwd=os.path.dirname(__file__), capture_output=True, text=True)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
+                if result.returncode != 0:
+                    logging.error(f"Git push failed with exit code {result.returncode}")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Git push failed with exit code {result.returncode}")
+            except Exception as sub_e:
+                logging.error(f"Error running subprocess for first_aid_kit.json: {sub_e}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Error running subprocess for first_aid_kit.json: {sub_e}")
+        except Exception as e:
+            logging.error(f"Error during first_aid_kit.json update or push: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
 
-            if file_latest_last_edited:
-                set_last_download_date(file_identifier, file_latest_last_edited)
-                logging.info(f"Saved last_edited for {filename}: {file_latest_last_edited}")
+    # --- Compare and Download firstIAiditem.json ---
+    local_first_aid_item_last_edited = None
+    if os.path.exists(LOCAL_ITEMS_FILE):
+        try:
+            with open(LOCAL_ITEMS_FILE, 'r') as f:
+                local_data = json.load(f)
+                if isinstance(local_data, dict) and 'last_edited' in local_data:
+                    last_edited_str = local_data['last_edited']
+                    local_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
+                    if local_first_aid_item_last_edited.tzinfo is None or local_first_aid_item_last_edited.tzinfo.utcoffset(local_first_aid_item_last_edited) is None:
+                        local_first_aid_item_last_edited = local_first_aid_item_last_edited.replace(tzinfo=timezone.utc)
+                    else:
+                        local_first_aid_item_last_edited = local_first_aid_item_last_edited.astimezone(timezone.utc)
+        except (json.JSONDecodeError, TypeError) as e:
+            logging.warning(f"Error reading local firstIAiditem.json for comparison: {e}")
+
+    logging.info(f"firstIAiditem.json: Remote last_edited: {remote_first_aid_item_last_edited}, Local last_edited: {local_first_aid_item_last_edited}")
+    if remote_first_aid_item_last_edited and (local_first_aid_item_last_edited is None or remote_first_aid_item_last_edited > local_first_aid_item_last_edited):
+        try:
+            with open(LOCAL_ITEMS_FILE, 'wb') as f:
+                f.write(response_item.content)
+            logging.info(f"Updated {LOCAL_ITEMS_FILE} with newer version from remote.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Updated {LOCAL_ITEMS_FILE} with newer version from remote.")
+            set_last_download_date('firstIAiditem', remote_first_aid_item_last_edited)
+
+            # Save historical copy only if updated
+            DOWNLOAD_DIR = os.path.join(os.path.dirname(__file__), 'downloaded_data')
+            os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            dated_filename = f"firstIAiditem_{timestamp}.json"
+            download_path = os.path.join(DOWNLOAD_DIR, dated_filename)
+            try:
+                with open(download_path, 'wb') as f:
+                    f.write(response_item.content)
+                logging.info(f"Saved historical copy of firstIAiditem.json to {download_path}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Saved historical copy of firstIAiditem.json to {download_path}")
+            except Exception as e:
+                logging.error(f"Error saving historical copy of firstIAiditem.json to {download_path}: {e}")
+
+            # Run git push
+            commit_message = f"Update firstIAiditem.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            push_command = f"push_to_github.bat \"{commit_message}\""
+            logging.info(f"Running git push command: {push_command}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub for firstIAiditem.json...")
+            try:
+                result = subprocess.run(push_command, shell=True, cwd=os.path.dirname(__file__), capture_output=True, text=True)
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
+                if result.returncode != 0:
+                    logging.error(f"Git push failed with exit code {result.returncode}")
+                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Git push failed with exit code {result.returncode}")
+            except Exception as sub_e:
+                logging.error(f"Error running subprocess for firstIAiditem.json: {sub_e}")
+                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Error running subprocess for firstIAiditem.json: {sub_e}")
+        except Exception as e:
+            logging.error(f"Error during firstIAiditem.json update or push: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
+                
+
+    
 
     logging.info("Scheduled pinger script finished.")
 

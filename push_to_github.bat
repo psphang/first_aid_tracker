@@ -15,8 +15,13 @@ if %errorlevel% equ 0 (
     goto :eof
 )
 
-REM Prompt for a commit message
-set /p commit_message="Enter your commit message: "
+REM Use the first argument as the commit message
+set "commit_message=%~1"
+
+IF "%commit_message%"=="" (
+    echo Error: No commit message provided.
+    exit /b 1
+)
 
 REM Commit the changes
 echo Committing changes...
