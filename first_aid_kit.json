@@ -118,10 +118,24 @@
         "name": "test b",
         "item_no": "91",
         "expiry_date": null,
+        "qty": 2
+      },
+      {
+        "id": "item-1753677304071",
+        "name": "Antiseptic Cream",
+        "item_no": "4",
+        "expiry_date": "2027-07-01",
+        "qty": 1
+      },
+      {
+        "id": "item-1753677382142",
+        "name": "Antiseptic Cream",
+        "item_no": "4",
+        "expiry_date": "2027-07-02",
         "qty": 1
       }
     ],
-    "last_edited": "2025-07-28T12:28:51.499313"
+    "last_edited": "2025-07-28T05:47:38.165360+00:00"
   },
   "test": {
     "items": [],

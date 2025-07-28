@@ -36,7 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 renderItems(items, { key: 'Item#', order: 'asc' }); // Initial sort by Item name
                 populateCategoryDropdown(items);
-                lastEditedItemsDate.textContent = `Last Edited: ${lastEdited || 'N/A'}`;
+                if (lastEdited) {
+                const date = new Date(lastEdited);
+                lastEditedItemsDate.textContent = `Last Edited: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            } else {
+                lastEditedItemsDate.textContent = `Last Edited: N/A`;
+            }
             } catch (renderError) {
                 console.error('[edit_items.js] Error during rendering items:', renderError);
                 alert('Failed to render items.');

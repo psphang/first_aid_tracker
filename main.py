@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import uvicorn
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 
 # --- Configuration ---
 DATA_FILE = "first_aid_kit.json"
@@ -127,7 +127,7 @@ async def add_item_to_kit(kit_id: str, item: Item):
     if kit_id not in data:
         data[kit_id] = {"items": [], "last_edited": ""}
     data[kit_id]["items"].append(item.dict())
-    data[kit_id]["last_edited"] = datetime.now().isoformat()
+    data[kit_id]["last_edited"] = datetime.now(timezone.utc).isoformat()
     write_data(DATA_FILE, data)
     return item
 
@@ -148,7 +148,7 @@ async def update_item_quantity(kit_id: str, item_id: str, quantity_update: Quant
         raise HTTPException(status_code=404, detail="Item not found")
 
     item_to_update['qty'] = quantity_update.qty
-    data[kit_id]["last_edited"] = datetime.now().isoformat()
+    data[kit_id]["last_edited"] = datetime.now(timezone.utc).isoformat()
     write_data(DATA_FILE, data)
     return {"message": "Quantity updated successfully"}
 
@@ -169,7 +169,7 @@ async def remove_item_from_kit(kit_id: str, item_id: str):
         raise HTTPException(status_code=404, detail="Item not found")
 
     items.remove(item_to_remove)
-    data[kit_id]["last_edited"] = datetime.now().isoformat()
+    data[kit_id]["last_edited"] = datetime.now(timezone.utc).isoformat()
     write_data(DATA_FILE, data)
     return {"message": "Item removed successfully"}
 
@@ -233,7 +233,7 @@ async def add_first_aid_item(item: Dict):
 
     items.append(formatted_item)
     items_data['items'] = items
-    items_data['last_edited'] = datetime.now().isoformat()
+    items_data['last_edited'] = datetime.now(timezone.utc).isoformat()
     write_data(ITEMS_FILE, items_data)
     return {"message": "Item added successfully"}
 
@@ -255,7 +255,7 @@ async def update_first_aid_item(item_name: str, updated_item: Dict):
     if not found:
         raise HTTPException(status_code=404, detail="Item not found")
     items_data['items'] = items
-    items_data['last_edited'] = datetime.now().isoformat()
+    items_data['last_edited'] = datetime.now(timezone.utc).isoformat()
     write_data(ITEMS_FILE, items_data)
     return {"message": "Item updated successfully"}
 
@@ -268,7 +268,7 @@ async def delete_first_aid_item(item_name: str):
     if len(items) == initial_len:
         raise HTTPException(status_code=404, detail="Item not found")
     items_data['items'] = items
-    items_data['last_edited'] = datetime.now().isoformat()
+    items_data['last_edited'] = datetime.now(timezone.utc).isoformat()
     write_data(ITEMS_FILE, items_data)
     return {"message": "Item deleted successfully"}
 

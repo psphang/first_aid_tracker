@@ -148,7 +148,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const kitData = await response.json();
             console.log('Kit data loaded:', kitData);
             renderItems(kitData.items);
-            lastEditedDate.textContent = `Last Edited: ${kitData.last_edited || 'N/A'}`;
+            if (kitData.last_edited) {
+                console.log('Raw last_edited:', kitData.last_edited);
+                const date = new Date(kitData.last_edited);
+                console.log('Date object:', date);
+                lastEditedDate.textContent = `Last Edited: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+            } else {
+                lastEditedDate.textContent = `Last Edited: N/A`;
+            }
         } catch (error) {
             console.error('Error loading items:', error);
         }
