@@ -42,6 +42,45 @@ def set_last_download_date(file_identifier, dt):
     with open(file_path, 'w') as f:
         f.write(dt.isoformat())
 
+def push_to_github(commit_message):
+    """
+    Stages, commits, and pushes changes to the GitHub repository.
+    """
+    logging.info(f"Attempting to push to GitHub with commit message: {commit_message}")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub...")
+
+    try:
+        # Stage all changes
+        subprocess.run(['git', 'add', '.'], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
+        logging.info("Staged all changes.")
+
+        # Check if there are any changes to commit
+        result = subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=os.path.dirname(__file__))
+        if result.returncode == 0:
+            logging.info("No changes to commit.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] No changes to commit.")
+            return
+
+        # Commit the changes
+        subprocess.run(['git', 'commit', '-m', commit_message], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
+        logging.info("Committed changes.")
+
+        # Push the changes to GitHub
+        result = subprocess.run(['git', 'push', 'origin', 'master'], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
+        logging.info("Pushed changes to GitHub.")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
+
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Git operation failed with exit code {e.returncode}")
+        logging.error(f"Stdout: {e.stdout}")
+        logging.error(f"Stderr: {e.stderr}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Git operation failed.")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Stderr:\n{e.stderr}")
+    except Exception as e:
+        logging.error(f"An error occurred during git push: {e}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: An error occurred during git push: {e}")
+
 def ping_site():
     """
     Sends a GET request to the specified URL and downloads files once per day if there are updates.
@@ -104,7 +143,7 @@ def ping_site():
                 if isinstance(data, dict) and 'last_edited' in data:
                     last_edited_str = data['last_edited']
                     remote_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
-                    if remote_first_aid_item_last_edited.tzinfo is None or remote_first_aid_item_last_edited.tzinfo.utcoffset(remote_first_aid_item_last_edited) is None:
+                    if remote_first_aid_item_last_edited.tzinfo is None or remote_first_aid_item_last_edited.utcoffset(remote_first_aid_item_last_edited) is None:
                         remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.replace(tzinfo=timezone.utc)
                     else:
                         remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.astimezone(timezone.utc)
@@ -126,7 +165,7 @@ def ping_site():
                         if isinstance(value, dict) and 'last_edited' in value:
                             last_edited_str = value['last_edited']
                             last_edited_dt = datetime.fromisoformat(last_edited_str)
-                            if last_edited_dt.tzinfo is None or last_edited_dt.tzinfo.utcoffset(last_edited_dt) is None:
+                            if last_edited_dt.tzinfo is None or last_edited_dt.utcoffset(last_edited_dt) is None:
                                 last_edited_dt = last_edited_dt.replace(tzinfo=timezone.utc)
                             else:
                                 last_edited_dt = last_edited_dt.astimezone(timezone.utc)
@@ -160,19 +199,7 @@ def ping_site():
 
             # Run git push
             commit_message = f"Update first_aid_kit.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            push_command = f"push_to_github.bat \"{commit_message}\"";
-            logging.info(f"Running git push command: {push_command}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub for first_aid_kit.json...")
-            try:
-                result = subprocess.run(push_command, shell=True, cwd=os.path.dirname(__file__), capture_output=True, text=True)
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
-                if result.returncode != 0:
-                    logging.error(f"Git push failed with exit code {result.returncode}")
-                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Git push failed with exit code {result.returncode}")
-            except Exception as sub_e:
-                logging.error(f"Error running subprocess for first_aid_kit.json: {sub_e}")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Error running subprocess for first_aid_kit.json: {sub_e}")
+            push_to_github(commit_message)
         except Exception as e:
             logging.error(f"Error during first_aid_kit.json update or push: {e}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
@@ -186,7 +213,7 @@ def ping_site():
                 if isinstance(local_data, dict) and 'last_edited' in local_data:
                     last_edited_str = local_data['last_edited']
                     local_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
-                    if local_first_aid_item_last_edited.tzinfo is None or local_first_aid_item_last_edited.tzinfo.utcoffset(local_first_aid_item_last_edited) is None:
+                    if local_first_aid_item_last_edited.tzinfo is None or local_first_aid_item_last_edited.utcoffset(local_first_aid_item_last_edited) is None:
                         local_first_aid_item_last_edited = local_first_aid_item_last_edited.replace(tzinfo=timezone.utc)
                     else:
                         local_first_aid_item_last_edited = local_first_aid_item_last_edited.astimezone(timezone.utc)
@@ -218,19 +245,7 @@ def ping_site():
 
             # Run git push
             commit_message = f"Update firstIAiditem.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            push_command = f"push_to_github.bat \"{commit_message}\""
-            logging.info(f"Running git push command: {push_command}")
-            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub for firstIAiditem.json...")
-            try:
-                result = subprocess.run(push_command, shell=True, cwd=os.path.dirname(__file__), capture_output=True, text=True)
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
-                if result.returncode != 0:
-                    logging.error(f"Git push failed with exit code {result.returncode}")
-                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Git push failed with exit code {result.returncode}")
-            except Exception as sub_e:
-                logging.error(f"Error running subprocess for firstIAiditem.json: {sub_e}")
-                print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Error running subprocess for firstIAiditem.json: {sub_e}")
+            push_to_github(commit_message)
         except Exception as e:
             logging.error(f"Error during firstIAiditem.json update or push: {e}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
