@@ -28,7 +28,7 @@ def get_last_download_date(file_identifier):
             date_str = f.read().strip()
             if date_str:
                 dt = datetime.fromisoformat(date_str)
-                if dt.tzinfo is None or dt.tzinfo.utcoffset(dt) is None:
+                if dt.tzinfo is None:
                     return dt.replace(tzinfo=timezone.utc)
                 return dt.astimezone(timezone.utc)
     return None
@@ -66,7 +66,7 @@ def push_to_github(commit_message):
         logging.info("Committed changes.")
 
         # Push the changes to GitHub
-        result = subprocess.run(['git', 'push', 'origin', 'master'], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
+        result = subprocess.run(['git', 'push', '--verbose', 'origin', 'master'], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
         logging.info("Pushed changes to GitHub.")
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stdout:\n{result.stdout}")
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Git Push Stderr:\n{result.stderr}")
@@ -122,7 +122,7 @@ def ping_site():
                         if isinstance(value, dict) and 'last_edited' in value:
                             last_edited_str = value['last_edited']
                             last_edited_dt = datetime.fromisoformat(last_edited_str)
-                            if last_edited_dt.tzinfo is None or last_edited_dt.tzinfo.utcoffset(last_edited_dt) is None:
+                            if last_edited_dt.tzinfo is None:
                                 last_edited_dt = last_edited_dt.replace(tzinfo=timezone.utc)
                             else:
                                 last_edited_dt = last_edited_dt.astimezone(timezone.utc)
@@ -143,7 +143,7 @@ def ping_site():
                 if isinstance(data, dict) and 'last_edited' in data:
                     last_edited_str = data['last_edited']
                     remote_first_aid_item_last_edited = datetime.fromisoformat(last_edited_str)
-                    if remote_first_aid_item_last_edited.tzinfo is None or remote_first_aid_item_last_edited.utcoffset(remote_first_aid_item_last_edited) is None:
+                    if remote_first_aid_item_last_edited.tzinfo is None:
                         remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.replace(tzinfo=timezone.utc)
                     else:
                         remote_first_aid_item_last_edited = remote_first_aid_item_last_edited.astimezone(timezone.utc)
