@@ -1,8 +1,6 @@
 @echo off
 REM This batch file stages, commits, and pushes changes to your GitHub repository.
-
-REM Navigate to the repository directory
-cd /d "%~dp0"
+REM It operates on the current working directory and prompts for a commit message.
 
 REM Stage all changes
 echo Staging changes...
@@ -15,11 +13,11 @@ if %errorlevel% equ 0 (
     goto :eof
 )
 
-REM Use the first argument as the commit message
-set "commit_message=%~1"
+REM Prompt for commit message
+set /p commit_message="Enter commit message: "
 
 IF "%commit_message%"=="" (
-    echo Error: No commit message provided.
+    echo Error: No commit message provided. Aborting.
     exit /b 1
 )
 

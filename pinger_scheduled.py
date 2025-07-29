@@ -50,17 +50,18 @@ def set_last_download_date(file_identifier, dt):
     with open(file_path, 'w') as f:
         f.write(dt.isoformat())
 
-def push_to_github(commit_message):
+def push_to_github(commit_message, files_to_add):
     """
-    Stages, commits, and pushes changes to the GitHub repository.
+    Stages, commits, and pushes specified files to the GitHub repository.
     """
     logging.info(f"Attempting to push to GitHub with commit message: {commit_message}")
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Attempting to push to GitHub...")
 
     try:
-        # Stage all changes
-        subprocess.run(['git', 'add', '.'], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
-        logging.info("Staged all changes.")
+        # Stage specified files
+        for file_path in files_to_add:
+            subprocess.run(['git', 'add', file_path], cwd=os.path.dirname(__file__), check=True, capture_output=True, text=True)
+        logging.info(f"Staged files: {files_to_add}")
 
         # Check if there are any changes to commit
         result = subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=os.path.dirname(__file__))
@@ -190,9 +191,28 @@ def ping_site():
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Saved historical copy of first_aid_kit.json to {download_path}")
 
             commit_message = f"Update first_aid_kit.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            push_to_github(commit_message)
+            push_to_github(commit_message, [LOCAL_DATA_FILE])
         except Exception as e:
             logging.error(f"Error during first_aid_kit.json update or push: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
+    elif local_first_aid_kit_last_edited and (remote_first_aid_kit_last_edited is None or local_first_aid_kit_last_edited > remote_first_aid_kit_last_edited):
+        try:
+            # Read, update timestamp, and rewrite local file to ensure Git detects change
+            with open(LOCAL_DATA_FILE, 'r') as f:
+                local_data = json.load(f)
+            if isinstance(local_data, dict):
+                for key, value in local_data.items():
+                    if isinstance(value, dict) and 'last_edited' in value:
+                        value['last_edited'] = datetime.now(timezone.utc).isoformat()
+            with open(LOCAL_DATA_FILE, 'w') as f:
+                json.dump(local_data, f, indent=4)
+            logging.info(f"Rewrote {LOCAL_DATA_FILE} with updated timestamp for local changes.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Rewrote {LOCAL_DATA_FILE} for local changes.")
+
+            commit_message = f"Update first_aid_kit.json from local changes at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            push_to_github(commit_message, [LOCAL_DATA_FILE])
+        except Exception as e:
+            logging.error(f"Error during first_aid_kit.json push for local changes: {e}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
 
     # --- Compare and Download firstIAiditem.json ---
@@ -227,9 +247,26 @@ def ping_site():
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Saved historical copy of firstIAiditem.json to {download_path}")
 
             commit_message = f"Update firstIAiditem.json from remote at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            push_to_github(commit_message)
+            push_to_github(commit_message, [LOCAL_ITEMS_FILE])
         except Exception as e:
             logging.error(f"Error during firstIAiditem.json update or push: {e}")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
+    elif local_first_aid_item_last_edited and (remote_first_aid_item_last_edited is None or local_first_aid_item_last_edited > remote_first_aid_item_last_edited):
+        try:
+            # Read, update timestamp, and rewrite local file to ensure Git detects change
+            with open(LOCAL_ITEMS_FILE, 'r') as f:
+                local_data = json.load(f)
+            if isinstance(local_data, dict) and 'last_edited' in local_data:
+                local_data['last_edited'] = datetime.now(timezone.utc).isoformat()
+            with open(LOCAL_ITEMS_FILE, 'w') as f:
+                json.dump(local_data, f, indent=4)
+            logging.info(f"Rewrote {LOCAL_ITEMS_FILE} with updated timestamp for local changes.")
+            print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Rewrote {LOCAL_ITEMS_FILE} for local changes.")
+
+            commit_message = f"Update firstIAiditem.json from local changes at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            push_to_github(commit_message, [LOCAL_ITEMS_FILE])
+        except Exception as e:
+            logging.error(f"Error during firstIAiditem.json push for local changes: {e}")
             print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}")
 
     logging.info("Scheduled pinger script finished.")
