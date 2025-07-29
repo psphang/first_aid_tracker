@@ -121,13 +121,6 @@
         "qty": 1
       },
       {
-        "id": "item-1753687204655",
-        "name": "test expired",
-        "item_no": "91",
-        "expiry_date": "2025-07-08",
-        "qty": 1
-      },
-      {
         "id": "item-1753687235249",
         "name": "Test near expire",
         "item_no": "90",
@@ -135,7 +128,7 @@
         "qty": 2
       }
     ],
-    "last_edited": "2025-07-28T08:30:43.863451+00:00"
+    "last_edited": "2025-07-29T01:06:33.932507+00:00"
   },
   "test": {
     "items": [],
