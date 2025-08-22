@@ -105,19 +105,12 @@
                 "item_no": "6",
                 "expiry_date": null,
                 "qty": 1
-            },
-            {
-                "id": "item-1755848081763",
-                "name": "Scissor",
-                "item_no": "12",
-                "expiry_date": null,
-                "qty": 10
             }
         ],
-        "last_edited": "2025-08-22T07:36:38.952717+00:00"
+        "last_edited": "2025-08-22T07:40:49.721873+00:00"
     },
     "test": {
         "items": [],
-        "last_edited": "2025-08-22T07:36:38.952727+00:00"
+        "last_edited": "2025-08-22T07:40:49.721883+00:00"
     }
 }
