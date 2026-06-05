@@ -1,5 +1,6 @@
 import asyncpg
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -29,6 +30,23 @@ class QuantityUpdate(BaseModel):
 
 # --- FastAPI App ---
 app = FastAPI()
+
+# --- CORS Middleware for Vercel Frontend ---
+# Allows frontend on Vercel to make API calls to this backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://first-aid-tracker.vercel.app",  # Vercel production frontend
+        "http://localhost:3000",                   # Local Next.js/React dev
+        "http://localhost:8001",                   # Local backend dev
+        "http://localhost:5173",                   # Local Vite dev
+        "http://127.0.0.1:3000",                  # Alternative localhost
+        "http://127.0.0.1:8001"                   # Alternative localhost
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 # --- Helper Functions ---
 def get_item_status(item):
@@ -70,6 +88,12 @@ async def startup_event():
 async def shutdown_event():
     """Close database pool on shutdown."""
     await DatabasePool.close()
+
+# --- Health Check Endpoint ---
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    return {"status": "ok", "service": "first-aid-tracker-api"}
 
 # --- API Endpoints ---
 @app.get("/api/firstaiditems")
