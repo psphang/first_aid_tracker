@@ -171,7 +171,13 @@ async def migrate_kits_and_items(conn):
                 if not isinstance(kit_data, dict) or 'items' not in kit_data:
                     continue
                 
-                last_edited = kit_data.get('last_edited')
+                last_edited_str = kit_data.get('last_edited')
+                last_edited = None
+                if last_edited_str:
+                    try:
+                        last_edited = datetime.fromisoformat(last_edited_str)
+                    except ValueError:
+                        pass
                 
                 # Insert or update kit
                 await conn.execute(
@@ -190,12 +196,19 @@ async def migrate_kits_and_items(conn):
                         item_id = item.get('id', f'item-{datetime.now().timestamp()}')
                         name = item.get('name', '')
                         item_no = item.get('item_no', '')
-                        expiry_date = item.get('expiry_date')
+                        expiry_date_str = item.get('expiry_date')
                         qty = item.get('qty', 0)
                         
-                        # Convert empty strings to None for dates
-                        if expiry_date == '':
-                            expiry_date = None
+                        expiry_date = None
+                        if expiry_date_str and expiry_date_str != '':
+                            try:
+                                expiry_date = datetime.fromisoformat(expiry_date_str).date()
+                            except ValueError:
+                                try:
+                                    from datetime import date
+                                    expiry_date = date.fromisoformat(expiry_date_str)
+                                except ValueError:
+                                    expiry_date = None
                         
                         await conn.execute(
                             """
