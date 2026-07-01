@@ -215,49 +215,17 @@ tr:nth-child(even) {
 
 /* Column Widths */
 .qty-column-view {
-    width: 32px; /* Set a fixed width for the quantity column in all items view */
+    width: 32px;
 }
 
 .qty-column {
-    width: 60px; /* Set a fixed width for the quantity column */
-}
-
-/* Quantity Controls */
-.qty-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.qty-btn {
-    background-color: transparent;
-    color: #007bff;
-    border: none;
-    padding: 2px 5px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    line-height: 1;
-}
-
-.qty-btn:hover {
-    background-color: #007bff;
-    color: white;
-}
-
-.qty-input {
-    width: 30px;
+    width: 60px;
     text-align: center;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin: 0 3px;
-    -moz-appearance: textfield; /* Firefox */
 }
 
-.qty-input::-webkit-outer-spin-button,
-.qty-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+.qty-display {
+    font-weight: bold;
+    font-size: 1em;
 }
 
 /* Status Indicators */

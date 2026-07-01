@@ -312,11 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.name}</td>
                     <td>${item.expiry_date || ''}</td>
                     <td class="qty-column">
-                        <div class="qty-controls">
-                            <button class="qty-btn" data-item-id="${item.id}" data-action="decrement">-</button>
-                            <input type="number" class="qty-input" data-item-id="${item.id}" value="${item.qty}" min="0">
-                            <button class="qty-btn" data-item-id="${item.id}" data-action="increment">+</button>
-                        </div>
+                        <span class="qty-display">${item.qty}</span>
                     </td>
                     <td><span class="item-status ${statusClass}">${item.status}</span></td>
                     <td>
@@ -354,14 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
                 });
             });
-        });
-
-        // Quantity controls
-        document.querySelectorAll('.qty-btn').forEach(btn => {
-            btn.addEventListener('click', handleQtyChange);
-        });
-        document.querySelectorAll('.qty-input').forEach(input => {
-            input.addEventListener('change', handleQtyInputChange);
         });
 
         // 3-dot menu toggle
@@ -442,7 +430,15 @@ document.addEventListener('DOMContentLoaded', () => {
         editItemId.value = itemId;
         editItemName.value = itemName;
         editItemQty.value = qty;
-        editItemExpiry.value = expiryDate || '';
+        if (expiryDate) {
+            editItemExpiry.value = expiryDate;
+            editItemExpiry.disabled = false;
+            editItemExpiry.parentElement.style.display = 'block';
+        } else {
+            editItemExpiry.value = '';
+            editItemExpiry.disabled = true;
+            editItemExpiry.parentElement.style.display = 'none';
+        }
         editModal.classList.remove('hidden');
     }
 
@@ -487,39 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Quantity Handlers ---
-    function handleQtyChange(e) {
-        const itemId = e.target.dataset.itemId;
-        const action = e.target.dataset.action;
-        const input = document.querySelector(`.qty-input[data-item-id="${itemId}"]`);
-        let currentQty = parseInt(input.value, 10);
-        if (action === 'increment') {
-            currentQty++;
-        } else if (action === 'decrement' && currentQty > 0) {
-            currentQty--;
-        }
-        if (currentQty === 0) {
-            if (confirm('Set quantity to 0? This will mark the item as Empty.')) {
-                input.value = 0;
-                updateItemQuantity(itemId, 0);
-            }
-        } else {
-            input.value = currentQty;
-            updateItemQuantity(itemId, currentQty);
-        }
-    }
-
-    function handleQtyInputChange(e) {
-        const itemId = e.target.dataset.itemId;
-        const newQty = parseInt(e.target.value, 10);
-        if (!isNaN(newQty) && newQty >= 0) {
-            updateItemQuantity(itemId, newQty);
-        } else {
-            loadItems();
-        }
-    }
-
-    async function updateItemQuantity(itemId, qty) {
+    // --- Quantity Handler ---
         try {
             const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
                 method: 'PUT',
