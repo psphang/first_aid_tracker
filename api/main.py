@@ -42,8 +42,11 @@ app.add_middleware(
 
 def find_public_dir():
     candidates = [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
+        os.path.join(os.getcwd(), "static"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static"),
         os.path.join(os.getcwd(), "public"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
+        "static",
         "public",
     ]
     for p in candidates:
@@ -91,28 +94,6 @@ async def shutdown_event():
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "service": "first-aid-tracker-api"}
-
-@app.get("/api/debug-paths")
-async def debug_paths():
-    results = {}
-    candidates = [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
-        os.path.join(os.getcwd(), "public"),
-        "public",
-        "/var/task/public",
-        "/var/runtime/public",
-    ]
-    for p in candidates:
-        results[p] = os.path.isdir(p)
-    results["cwd"] = os.getcwd()
-    results["file_dir"] = os.path.dirname(os.path.abspath(__file__))
-    results["ls_file_dir"] = os.listdir(os.path.dirname(os.path.abspath(__file__)))
-    if os.path.isdir(os.path.join(os.getcwd())):
-        try:
-            results["ls_cwd"] = os.listdir(os.getcwd())
-        except:
-            pass
-    return results
 
 @app.get("/api/firstaiditems")
 async def get_first_aid_items():
