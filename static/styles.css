@@ -425,6 +425,16 @@ tr:nth-child(even) {
     border-color: #b3d7ff;
 }
 
+#recent-items-list .recent-item.recent-change[data-action="deleted"] {
+    background-color: #fff5f5;
+    border-color: #ffb3b3;
+}
+
+#recent-items-list .recent-item.recent-change[data-action="added"] {
+    background-color: #f0fff0;
+    border-color: #b3ffb3;
+}
+
 .recent-item-info {
     display: flex;
     flex-direction: column;

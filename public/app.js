@@ -211,9 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return hoursSince < 24;
         });
 
-        if (recentItems.length > 0) {
-            renderRecentItems(recentItems);
-        }
+        renderRecentItems(recentItems);
     }
 
     function renderRecentItems(items) {
@@ -228,10 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
             changeLog.forEach(entry => {
                 const div = document.createElement('div');
                 div.classList.add('recent-item', 'recent-change');
+                div.dataset.action = entry.action;
+                const actionLabel = entry.action === 'deleted' ? '🗑 Deleted' :
+                                    entry.action === 'added' ? '➕ Added' : '✏️ Edited';
                 div.innerHTML = `
                     <div class="recent-item-info">
                         <span class="recent-item-name">${entry.name}</span>
-                        <span class="recent-item-changes">${entry.changes.join(' | ')}</span>
+                        <span class="recent-item-changes">${actionLabel}: ${entry.changes.join(' | ')}</span>
                     </div>
                     <span class="recent-item-time">${getTimeAgo(new Date(), entry.time)}</span>
                 `;
@@ -504,8 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Delete Modal ---
+    let deleteTargetName = '';
+
     function openDeleteModal(itemId, itemName) {
         deleteTargetId = itemId;
+        deleteTargetName = itemName;
         deleteItemName.textContent = `Are you sure you want to delete "${itemName}"?`;
         deleteModal.classList.remove('hidden');
     }
@@ -514,8 +518,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!deleteTargetId) return;
         try {
             await fetch(`/api/kits/${currentKitId}/${deleteTargetId}`, { method: 'DELETE' });
+            changeLog.unshift({ name: deleteTargetName, action: 'deleted', changes: ['Item removed'], time: new Date() });
+            if (changeLog.length > 20) changeLog.pop();
             deleteModal.classList.add('hidden');
             deleteTargetId = null;
+            deleteTargetName = '';
             await loadItems();
         } catch (error) {
             console.error('Error removing item:', error);
@@ -558,6 +565,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(newItem)
             });
             if (!response.ok) throw new Error('Failed to add item');
+            const details = [];
+            details.push(`Qty: ${qty}`);
+            if (expiry_date) details.push(`Exp: ${expiry_date}`);
+            changeLog.unshift({ name: name, action: 'added', changes: details, time: new Date() });
+            if (changeLog.length > 20) changeLog.pop();
             await loadItems();
             addItemForm.reset();
             expiryDateContainer.style.display = 'none';
