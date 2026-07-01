@@ -61,12 +61,18 @@ def get_item_status(item):
 async def startup_event():
     await DatabasePool.initialize()
     global INDEX_HTML, EDIT_HTML, APP_JS, EDIT_JS, STYLES_CSS
-    base = os.path.join(os.path.dirname(__file__), "..", "public")
-    INDEX_HTML = open(os.path.join(base, "index.html")).read()
-    EDIT_HTML = open(os.path.join(base, "edit_items.html")).read()
-    APP_JS = open(os.path.join(base, "app.js")).read()
-    EDIT_JS = open(os.path.join(base, "edit_items.js")).read()
-    STYLES_CSS = open(os.path.join(base, "styles.css")).read()
+    for base_dir in [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
+        os.path.join(os.getcwd(), "public"),
+        "public",
+    ]:
+        if os.path.isdir(base_dir):
+            INDEX_HTML = open(os.path.join(base_dir, "index.html")).read()
+            EDIT_HTML = open(os.path.join(base_dir, "edit_items.html")).read()
+            APP_JS = open(os.path.join(base_dir, "app.js")).read()
+            EDIT_JS = open(os.path.join(base_dir, "edit_items.js")).read()
+            STYLES_CSS = open(os.path.join(base_dir, "styles.css")).read()
+            break
 
 INDEX_HTML = ""
 EDIT_HTML = ""
