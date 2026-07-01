@@ -47,8 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let firstAidItems = [];
     let deleteTargetId = null;
     let allKitItems = [];
-    let changeLog = [];
+    let changeLog = JSON.parse(localStorage.getItem('changeLog') || '[]');
     let previousItemState = {};
+
+    function saveChangeLog() {
+        localStorage.setItem('changeLog', JSON.stringify(changeLog.slice(0, 50)));
+    }
+
+    // Clean entries older than 24 hours on load
+    changeLog = changeLog.filter(entry => (Date.now() - new Date(entry.time).getTime()) < 86400000);
+    saveChangeLog();
 
     // --- Event Listeners ---
     enterKitBtn.addEventListener('click', enterKit);
@@ -529,6 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (changes.length > 0) {
                 changeLog.unshift({ name: old.name, changes: changes, time: new Date() });
                 if (changeLog.length > 20) changeLog.pop();
+                saveChangeLog();
             }
             editModal.classList.add('hidden');
             await loadItems();
@@ -554,6 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetch(`/api/kits/${currentKitId}/${deleteTargetId}`, { method: 'DELETE' });
             changeLog.unshift({ name: deleteTargetName, action: 'deleted', changes: ['Item removed'], time: new Date() });
             if (changeLog.length > 20) changeLog.pop();
+            saveChangeLog();
             deleteModal.classList.add('hidden');
             deleteTargetId = null;
             deleteTargetName = '';
@@ -604,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (expiry_date) details.push(`Exp: ${expiry_date}`);
             changeLog.unshift({ name: name, action: 'added', changes: details, time: new Date() });
             if (changeLog.length > 20) changeLog.pop();
+            saveChangeLog();
             await loadItems();
             addItemForm.reset();
             expiryDateContainer.style.display = 'none';
