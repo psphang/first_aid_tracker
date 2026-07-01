@@ -21,12 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const editFirstAidItemsBtn = document.getElementById('edit-first-aid-items-btn');
     const lastEditedDate = document.getElementById('last-edited-date');
 
-    // Recent items elements
-    const recentItemsBanner = document.getElementById('recent-items-banner');
-    const recentItemsText = document.getElementById('recent-items-text');
-    const closeRecentBanner = document.getElementById('close-recent-banner');
-    const recentItemsPanel = document.getElementById('recent-items-panel');
-    const closeRecentPanel = document.getElementById('close-recent-panel');
+    // Recent items modal elements
+    const recentModal = document.getElementById('recent-modal');
+    const closeRecentModal = document.getElementById('close-recent-modal');
     const recentItemsList = document.getElementById('recent-items-list');
 
     // Edit modal elements
@@ -67,9 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/edit_items';
     });
 
-    // Recent items listeners
-    closeRecentBanner.addEventListener('click', () => recentItemsBanner.classList.add('hidden'));
-    closeRecentPanel.addEventListener('click', () => recentItemsPanel.classList.add('hidden'));
+    // Recent items modal listeners
+    closeRecentModal.addEventListener('click', () => recentModal.classList.add('hidden'));
+    recentModal.addEventListener('click', (e) => {
+        if (e.target === recentModal) recentModal.classList.add('hidden');
+    });
 
     // Edit modal listeners
     closeEditModal.addEventListener('click', () => editModal.classList.add('hidden'));
@@ -211,11 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (recentItems.length > 0) {
-            recentItemsText.textContent = `${recentItems.length} item${recentItems.length > 1 ? 's' : ''} updated in the last 24 hours`;
-            recentItemsBanner.classList.remove('hidden');
             renderRecentItems(recentItems);
-        } else {
-            recentItemsBanner.classList.add('hidden');
         }
     }
 
@@ -248,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleRecentPanel() {
-        recentItemsPanel.classList.toggle('hidden');
+        recentModal.classList.remove('hidden');
     }
 
     function renderItems(groupedItems, sortConfig = { key: 'expiry_date', order: 'asc' }) {
@@ -480,22 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error removing item:', error);
             alert('Could not delete item. Please try again.');
-        }
-    }
-
-    // --- Quantity Handler ---
-        try {
-            const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ qty })
-            });
-            if (!response.ok) throw new Error('Failed to update quantity');
-            await loadItems();
-        } catch (error) {
-            console.error('Error updating quantity:', error);
-            alert('Could not update quantity. Please try again.');
-            loadItems();
         }
     }
 

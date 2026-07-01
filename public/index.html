@@ -40,19 +40,6 @@
                 <a href="#" id="switch-kit-btn">Switch Kit</a>
             </div>
 
-            <div id="recent-items-banner" class="hidden">
-                <span id="recent-items-text"></span>
-                <button id="close-recent-banner" class="close-banner-btn">&times;</button>
-            </div>
-
-            <div id="recent-items-panel" class="hidden">
-                <div class="recent-panel-header">
-                    <h3>Recently Edited Items</h3>
-                    <button id="close-recent-panel">&times;</button>
-                </div>
-                <div id="recent-items-list"></div>
-            </div>
-
             <div id="item-list">
                 <!-- Items will be dynamically inserted here -->
             </div>
@@ -70,6 +57,17 @@
                 </div>
                 <button type="submit">Add Item</button>
             </form>
+        </div>
+
+        <!-- Recent Items Modal -->
+        <div id="recent-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Recently Edited Items</h3>
+                    <button id="close-recent-modal" class="close-modal-btn">&times;</button>
+                </div>
+                <div id="recent-items-list"></div>
+            </div>
         </div>
 
         <!-- Edit Item Modal -->
