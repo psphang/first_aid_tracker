@@ -2,7 +2,7 @@ import asyncpg
 import os
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import date, timedelta, datetime
@@ -157,22 +157,22 @@ async def delete_first_aid_item_endpoint(item_name: str):
 async def serve_css():
     content = read_file("styles.css")
     if content:
-        return HTMLResponse(content=content, media_type="text/css")
-    return HTMLResponse(content="not found", status_code=404)
+        return Response(content=content, media_type="text/css")
+    return Response(content="not found", status_code=404)
 
 @app.get("/app.js")
 async def serve_app_js():
     content = read_file("app.js")
     if content:
-        return HTMLResponse(content=content, media_type="application/javascript")
-    return HTMLResponse(content="not found", status_code=404)
+        return Response(content=content, media_type="application/javascript")
+    return Response(content="not found", status_code=404)
 
 @app.get("/edit_items.js")
 async def serve_edit_js():
     content = read_file("edit_items.js")
     if content:
-        return HTMLResponse(content=content, media_type="application/javascript")
-    return HTMLResponse(content="not found", status_code=404)
+        return Response(content=content, media_type="application/javascript")
+    return Response(content="not found", status_code=404)
 
 @app.get("/edit_items")
 async def serve_edit_page():
