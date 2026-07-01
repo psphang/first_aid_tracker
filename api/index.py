@@ -2,7 +2,6 @@ import asyncpg
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import date, timedelta, datetime
@@ -19,8 +18,6 @@ from db import (
     delete_first_aid_item,
     get_all_items_across_kits,
 )
-
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "public")
 
 class Item(BaseModel):
     id: str
@@ -67,7 +64,7 @@ async def startup_event():
 async def shutdown_event():
     await DatabasePool.close()
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "ok", "service": "first-aid-tracker-api"}
 
@@ -128,23 +125,3 @@ async def update_first_aid_item_endpoint(item_name: str, updated_item: Dict):
 async def delete_first_aid_item_endpoint(item_name: str):
     await delete_first_aid_item(item_name)
     return {"message": "Item deleted successfully"}
-
-@app.get("/styles.css")
-async def serve_css():
-    return FileResponse(os.path.join(STATIC_DIR, "styles.css"), media_type="text/css")
-
-@app.get("/app.js")
-async def serve_app_js():
-    return FileResponse(os.path.join(STATIC_DIR, "app.js"), media_type="application/javascript")
-
-@app.get("/edit_items.js")
-async def serve_edit_js():
-    return FileResponse(os.path.join(STATIC_DIR, "edit_items.js"), media_type="application/javascript")
-
-@app.get("/edit_items")
-async def serve_edit_page():
-    return FileResponse(os.path.join(STATIC_DIR, "edit_items.html"), media_type="text/html")
-
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    return FileResponse(os.path.join(STATIC_DIR, "index.html"), media_type="text/html")
