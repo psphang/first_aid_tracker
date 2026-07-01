@@ -483,22 +483,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Quantity Handler ---
-        try {
-            const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ qty })
-            });
-            if (!response.ok) throw new Error('Failed to update quantity');
-            await loadItems();
-        } catch (error) {
-            console.error('Error updating quantity:', error);
-            alert('Could not update quantity. Please try again.');
-            loadItems();
-        }
-    }
-
     // --- Add Item ---
     async function addItem(e) {
         e.preventDefault();
