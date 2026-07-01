@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel
 from typing import List, Dict, Optional
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 
 from db import (
     DatabasePool,
@@ -29,6 +29,7 @@ class Item(BaseModel):
 
 class QuantityUpdate(BaseModel):
     qty: int
+    expiry_date: Optional[str] = None
 
 app = FastAPI()
 
@@ -122,7 +123,15 @@ async def add_item_to_kit_endpoint(kit_id: str, item: Item):
 @app.put("/api/kits/{kit_id}/{item_id}")
 async def update_item_quantity_endpoint(kit_id: str, item_id: str, quantity_update: QuantityUpdate):
     await update_item_quantity(kit_id, item_id, quantity_update.qty)
-    return {"message": "Quantity updated successfully"}
+    if quantity_update.expiry_date is not None:
+        from datetime import date as date_type
+        expiry = date_type.fromisoformat(quantity_update.expiry_date) if quantity_update.expiry_date else None
+        async with await DatabasePool.get_connection() as conn:
+            await conn.execute(
+                "UPDATE kit_items SET expiry_date = $1, updated_at = $2 WHERE id = $3 AND kit_id = $4",
+                expiry, datetime.now(timezone.utc), item_id, kit_id
+            )
+    return {"message": "Item updated successfully"}
 
 @app.delete("/api/kits/{kit_id}/{item_id}")
 async def remove_item_from_kit_endpoint(kit_id: str, item_id: str):

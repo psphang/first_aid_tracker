@@ -100,7 +100,8 @@ async def get_kit_items(kit_id: str) -> Dict[str, Any]:
                 'expiry_date': item['expiry_date'].isoformat() if item['expiry_date'] else None,
                 'qty': item['qty'],
                 'category': details.get('category', 'Uncategorized'),
-                'Expiring': details.get('expiring', 'No')
+                'Expiring': details.get('expiring', 'No'),
+                'updated_at': item['updated_at'].isoformat() if item['updated_at'] else None,
             }
             
             category = item_data['category']
