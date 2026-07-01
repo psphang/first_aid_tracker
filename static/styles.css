@@ -19,16 +19,19 @@ body {
     box-sizing: border-box;
 }
 
-/* Hidden utility */
-.hidden {
-    display: none !important;
+/* Hidden utility for banner, panel, modals only */
+#recent-items-banner.hidden,
+#recent-items-panel.hidden,
+#edit-modal.hidden,
+#delete-modal.hidden {
+    display: none;
 }
 
 /* View Management */
 #kit-selection-view,
 #kit-management-view,
 #all-items-view {
-    display: none; /* Hidden by default, controlled by app.js */
+    display: none;
     flex-direction: column;
     gap: 15px;
 }
