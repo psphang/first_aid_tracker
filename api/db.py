@@ -101,7 +101,7 @@ async def get_kit_items(kit_id: str) -> Dict[str, Any]:
                 'qty': item['qty'],
                 'category': details.get('category', 'Uncategorized'),
                 'Expiring': details.get('expiring', 'No'),
-                'updated_at': item['updated_at'].isoformat() if item['updated_at'] else None,
+                'updated_at': (item['updated_at'] or item['created_at']).isoformat() if (item['updated_at'] or item['created_at']) else None,
             }
             
             category = item_data['category']
