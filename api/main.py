@@ -96,16 +96,6 @@ async def shutdown_event():
 async def health_check():
     return {"status": "ok", "service": "first-aid-tracker-api"}
 
-@app.get("/api/test-updated-at")
-async def test_updated_at():
-    async with await DatabasePool.get_connection() as conn:
-        items = await conn.fetch(
-            "SELECT id, name, updated_at, created_at FROM kit_items LIMIT 3"
-        )
-        return [{"id": i['id'], "name": i['name'], 
-                 "updated_at": i['updated_at'].isoformat() if i['updated_at'] else None,
-                 "created_at": i['created_at'].isoformat() if i['created_at'] else None} for i in items]
-
 @app.get("/api/firstaiditems")
 async def get_first_aid_items():
     data = await get_all_first_aid_items()
