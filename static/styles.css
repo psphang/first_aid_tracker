@@ -23,6 +23,7 @@ body {
 #kit-selection-view,
 #kit-management-view,
 #all-items-view {
+    display: none;
     flex-direction: column;
     gap: 15px;
 }
