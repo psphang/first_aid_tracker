@@ -6,7 +6,7 @@ Handles async database operations with connection pooling
 import asyncpg
 import os
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 # Get database URL from environment or use default
 DATABASE_URL = os.getenv(
@@ -128,6 +128,11 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
                 kit_id
             )
             
+            # Parse expiry_date string to date object for PostgreSQL
+            expiry_date = item_data.get('expiry_date')
+            if expiry_date and isinstance(expiry_date, str):
+                expiry_date = date.fromisoformat(expiry_date)
+            
             # Add item
             await conn.execute(
                 """
@@ -139,7 +144,7 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
                 kit_id,
                 item_data['name'],
                 item_data.get('item_no'),
-                item_data.get('expiry_date'),
+                expiry_date,
                 item_data['qty']
             )
             
