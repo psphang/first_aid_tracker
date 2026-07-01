@@ -19,21 +19,17 @@ body {
     box-sizing: border-box;
 }
 
-/* Hidden utility for banner, panel, modals only */
-#recent-items-banner.hidden,
-#recent-items-panel.hidden,
-#edit-modal.hidden,
-#delete-modal.hidden {
-    display: none;
-}
-
 /* View Management */
 #kit-selection-view,
 #kit-management-view,
 #all-items-view {
-    display: none;
     flex-direction: column;
     gap: 15px;
+}
+
+/* Hidden utility */
+.hidden {
+    display: none;
 }
 
 /* Specific view styles */
