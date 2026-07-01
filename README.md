@@ -8,7 +8,13 @@ A web application for tracking first-aid kit contents, quantities, and expiry da
 
 - **Kit Management** — Enter a kit code to view and manage items
 - **Item Tracking** — Track quantity, expiry dates, and item status (OK / Expires Soon / Expired / Empty)
-- **Add / Remove / Update** — Full CRUD operations for kit items
+- **Add / Edit / Delete** — Full CRUD operations via modal dialogs with confirmation
+- **3-Dot Action Menu** — Each item has a ⋮ menu with Edit and Delete options to prevent accidental removal
+- **Recent Changes History** — Draggable modal popup showing what changed, when, and by whom
+  - ✏️ Edited — shows old → new values (e.g., Qty: 1 → 3)
+  - ➕ Added — shows item details on creation
+  - 🗑 Deleted — shows which item was removed
+  - Changes persist across page refreshes via localStorage
 - **First-Aid Items Editor** — Maintain a master list of first-aid items with categories
 - **All Items View** — See all items across all kits in one place
 - **Cloud Database** — Data persisted in Neon PostgreSQL (no data loss on server restarts)
@@ -47,9 +53,9 @@ A web application for tracking first-aid kit contents, quantities, and expiry da
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/health` | Health check |
-| GET | `/api/kits/{kit_id}` | Get all items for a kit |
+| GET | `/api/kits/{kit_id}` | Get all items for a kit (includes `updated_at`) |
 | POST | `/api/kits/{kit_id}` | Add an item to a kit |
-| PUT | `/api/kits/{kit_id}/{item_id}` | Update item quantity |
+| PUT | `/api/kits/{kit_id}/{item_id}` | Update item quantity and/or expiry date |
 | DELETE | `/api/kits/{kit_id}/{item_id}` | Remove an item from a kit |
 | GET | `/api/all_items` | Get all items across all kits |
 | GET | `/api/firstaiditems` | Get master first-aid items list |
@@ -62,7 +68,7 @@ A web application for tracking first-aid kit contents, quantities, and expiry da
 Three tables in Neon PostgreSQL:
 
 - **`kits`** — Kit box metadata (kit_id, last_edited timestamp)
-- **`kit_items`** — Individual items within each kit (name, quantity, expiry_date, linked to kit_id)
+- **`kit_items`** — Individual items within each kit (name, quantity, expiry_date, created_at, updated_at, linked to kit_id)
 - **`first_aid_items`** — Master list of all available first-aid items with categories and expiring flag
 
 See `schema.sql` for full DDL with indexes and comments.
@@ -147,11 +153,12 @@ first_aid_tracker/
 │   ├── main.py          # FastAPI application (API routes + static file serving)
 │   └── db.py            # Database connection pool and query functions
 ├── static/
-│   ├── index.html       # Main SPA page
+│   ├── index.html       # Main SPA page (with modals for edit/delete/recent)
 │   ├── edit_items.html  # First-aid items editor page
-│   ├── styles.css       # Global styles
-│   ├── app.js           # Main application JavaScript
+│   ├── styles.css       # Global styles (modals, menus, status indicators)
+│   ├── app.js           # Main application JavaScript (drag, changeLog, localStorage)
 │   └── edit_items.js    # Items editor JavaScript
+├── public/              # Mirror of static/ (fallback for Vercel builds)
 ├── schema.sql           # PostgreSQL database schema
 ├── migrate_to_sql.py    # JSON → SQL migration script
 ├── requirements.txt     # Python dependencies
@@ -168,6 +175,22 @@ first_aid_tracker/
 | asyncpg | 0.29.0 | Async PostgreSQL driver |
 | pydantic | 2.5.0 | Data validation |
 | python-dotenv | 1.0.0 | Environment variable management |
+
+## Free Tier Limits
+
+### Neon PostgreSQL (Free)
+- 100 compute hours/month
+- 0.5 GB storage
+- 5 GB egress
+- Scales to zero after 5 min inactivity
+
+### Vercel Hobby (Free)
+- 4 hours active CPU/month
+- 1M function invocations/month
+- 100 GB data transfer/month
+- Unlimited deployments
+
+Your project usage is well within both free tiers.
 
 ## License
 
