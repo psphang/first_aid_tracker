@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let firstAidItems = [];
     let deleteTargetId = null;
     let allKitItems = [];
+    let changeLog = [];
+    let previousItemState = {};
 
     // --- Event Listeners ---
     enterKitBtn.addEventListener('click', enterKit);
@@ -216,7 +218,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderRecentItems(items) {
         recentItemsList.innerHTML = '';
+
+        if (changeLog.length > 0) {
+            const changesHeader = document.createElement('div');
+            changesHeader.classList.add('recent-section-header');
+            changesHeader.textContent = 'Changes this session:';
+            recentItemsList.appendChild(changesHeader);
+
+            changeLog.forEach(entry => {
+                const div = document.createElement('div');
+                div.classList.add('recent-item', 'recent-change');
+                div.innerHTML = `
+                    <div class="recent-item-info">
+                        <span class="recent-item-name">${entry.name}</span>
+                        <span class="recent-item-changes">${entry.changes.join(' | ')}</span>
+                    </div>
+                    <span class="recent-item-time">${getTimeAgo(new Date(), entry.time)}</span>
+                `;
+                recentItemsList.appendChild(div);
+            });
+
+            const divider = document.createElement('div');
+            divider.classList.add('recent-divider');
+            recentItemsList.appendChild(divider);
+        }
+
         const now = new Date();
+        const dbHeader = document.createElement('div');
+        dbHeader.classList.add('recent-section-header');
+        dbHeader.textContent = 'Updated in last 24 hours:';
+        recentItemsList.appendChild(dbHeader);
+
         const sorted = [...items].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
         sorted.forEach(item => {
             const div = document.createElement('div');
@@ -224,7 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const updated = new Date(item.updated_at);
             const timeAgo = getTimeAgo(now, updated);
             div.innerHTML = `
-                <span class="recent-item-name">${item.name} (Qty: ${item.qty})</span>
+                <div class="recent-item-info">
+                    <span class="recent-item-name">${item.name}</span>
+                    <span class="recent-item-detail">Qty: ${item.qty}${item.expiry_date ? ' | Exp: ' + item.expiry_date : ''}</span>
+                </div>
                 <span class="recent-item-time">${timeAgo}</span>
             `;
             recentItemsList.appendChild(div);
@@ -425,6 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editItemId.value = itemId;
         editItemName.value = itemName;
         editItemQty.value = qty;
+        previousItemState = { id: itemId, name: itemName, qty: parseInt(qty, 10), expiry_date: expiryDate || null };
         if (expiryDate) {
             editItemExpiry.value = expiryDate;
             editItemExpiry.disabled = false;
@@ -442,6 +478,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemId = editItemId.value;
         const newQty = parseInt(editItemQty.value, 10);
         const newExpiry = editItemExpiry.value || null;
+        const old = previousItemState;
+
+        const changes = [];
+        if (old.qty !== newQty) changes.push(`Qty: ${old.qty} → ${newQty}`);
+        if (old.expiry_date !== newExpiry) changes.push(`Expiry: ${old.expiry_date || 'none'} → ${newExpiry || 'none'}`);
 
         try {
             const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
@@ -450,6 +491,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ qty: newQty, expiry_date: newExpiry })
             });
             if (!response.ok) throw new Error('Failed to update item');
+            if (changes.length > 0) {
+                changeLog.unshift({ name: old.name, changes: changes, time: new Date() });
+                if (changeLog.length > 20) changeLog.pop();
+            }
             editModal.classList.add('hidden');
             await loadItems();
         } catch (error) {
