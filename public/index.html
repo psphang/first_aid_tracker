@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Aid Kit Tracker</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <div id="app">
+
+        <!-- Kit Selection View (Lobby) -->
+        <div id="kit-selection-view">
+            <h1>First-Aid Kit Tracker</h1>
+            <div class="form-container">
+                <label for="kit-id-input">Enter or Scan Kit Box Code</label>
+                <input type="text" id="kit-id-input" placeholder="e.g., WAREHOUSE-A-01">
+                <button id="enter-kit-btn">Enter Kit</button>
+            </div>
+            <div class="link-container">
+                <a href="#" id="view-all-items-btn">View All Items</a>
+                <a href="/edit_items" id="edit-first-aid-items-btn">Edit First-Aid Items List</a>
+            </div>
+        </div>
+
+        <!-- All Items View (Hidden by default) -->
+        <div id="all-items-view" class="hidden">
+            <h2>All Items Across All Kits</h2>
+            <a href="#" id="back-to-kit-selection-btn">Back to Kit Selection</a>
+            <div id="all-items-list"></div>
+        </div>
+
+        <!-- Kit Management View (Hidden by default) -->
+        <div id="kit-management-view" class="hidden">
+            <div class="header">
+                <h2 id="kit-title"></h2>
+                <div id="last-edited-date"></div>
+                <a href="#" id="switch-kit-btn">Switch Kit</a>
+            </div>
+
+            <div id="item-list">
+                <!-- Items will be dynamically inserted here -->
+            </div>
+
+            <form id="add-item-form" class="form-container">
+                <h3>Add New Item</h3>
+                <select id="item-select"></select>
+                <div id="expiry-date-container" style="display: none;">
+                    <label for="expiry-date-input">Expiry Date</label>
+                    <input type="date" id="expiry-date-input">
+                </div>
+                <div id="quantity-container">
+                    <label for="quantity-input">Quantity</label>
+                    <input type="number" id="quantity-input" min="1" value="1">
+                </div>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,21 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://first-aid-tracker.onrender.com/api/$1"
-    },
-    {
-      "source": "/kit/(.*)",
-      "destination": "/static/index.html"
-    },
-    {
-      "source": "/edit_items",
-      "destination": "/static/edit_items.html"
-    },
-    {
-      "source": "/",
-      "destination": "/static/index.html"
-    }
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
+    { "source": "/kit/(.*)", "destination": "/public/index.html" },
+    { "source": "/edit_items", "destination": "/public/edit_items.html" },
+    { "source": "/", "destination": "/public/index.html" }
   ]
 }

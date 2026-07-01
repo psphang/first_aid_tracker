@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit First-Aid Items</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div id="app">
+        <h1>Edit First-Aid Items</h1>
+        <div id="last-edited-items-date"></div>
+        <a href="/" id="back-to-main-btn">Back to Main</a>
+
+        <div id="item-editor">
+            <h2>Current Items</h2>
+            <div id="grouped-items-list"></div>
+
+            <h2>Add New Item</h2>
+            <form id="add-new-item-form">
+                <div class="form-grid">
+                    <label for="new-item-item-no">Item#:</label>
+                    <input type="text" id="new-item-item-no" required>
+                    
+                    <label for="new-item-name">Item Name:</label>
+                    <input type="text" id="new-item-name" required>
+                    
+                    <label for="new-item-category">Category:</label>
+                    <select id="new-item-category" required>
+                        <!-- Options will be populated by JavaScript -->
+                    </select>
+                    
+                    <label for="new-item-expiring">Expiring:</label>
+                    <select id="new-item-expiring">
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <button type="submit">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/edit_items.js"></script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded event fired.');
+    // --- DOM Elements ---
+    const kitSelectionView = document.getElementById('kit-selection-view');
+    const kitManagementView = document.getElementById('kit-management-view');
+    const allItemsView = document.getElementById('all-items-view');
+    const kitIdInput = document.getElementById('kit-id-input');
+    const enterKitBtn = document.getElementById('enter-kit-btn');
+    const kitTitle = document.getElementById('kit-title');
+    const switchKitBtn = document.getElementById('switch-kit-btn');
+    const itemList = document.getElementById('item-list');
+    const allItemsList = document.getElementById('all-items-list');
+    const viewAllItemsBtn = document.getElementById('view-all-items-btn');
+    const backToKitSelectionBtn = document.getElementById('back-to-kit-selection-btn');
+    const addItemForm = document.getElementById('add-item-form');
+    const itemSelect = document.getElementById('item-select');
+    const expiryDateContainer = document.getElementById('expiry-date-container');
+    const expiryDateInput = document.getElementById('expiry-date-input');
+    const quantityContainer = document.getElementById('quantity-container');
+    const quantityInput = document.getElementById('quantity-input');
+    const editFirstAidItemsBtn = document.getElementById('edit-first-aid-items-btn');
+    const lastEditedDate = document.getElementById('last-edited-date');
+
+    let currentKitId = null;
+    let firstAidItems = [];
+
+    // --- Event Listeners ---
+    enterKitBtn.addEventListener('click', enterKit);
+    kitIdInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') enterKit();
+    });
+    switchKitBtn.addEventListener('click', () => {
+        window.location.href = '/';
+    });
+    addItemForm.addEventListener('submit', addItem);
+    viewAllItemsBtn.addEventListener('click', loadAllItems);
+    backToKitSelectionBtn.addEventListener('click', () => showView('kit-selection'));
+    itemSelect.addEventListener('change', handleItemSelection);
+    editFirstAidItemsBtn.addEventListener('click', () => {
+        window.location.href = '/edit_items';
+    });
+
+    // --- Functions ---
+    function showView(viewName) {
+        console.log(`Showing view: ${viewName}`);
+        kitSelectionView.style.display = 'none';
+        kitManagementView.style.display = 'none';
+        allItemsView.style.display = 'none';
+
+        if (viewName === 'kit-management') {
+            kitManagementView.style.display = 'flex';
+        } else if (viewName === 'all-items') {
+            allItemsView.style.display = 'block';
+        } else {
+            kitSelectionView.style.display = 'flex';
+        }
+    }
+
+    async function enterKit() {
+        const kitId = kitIdInput.value.trim();
+        if (!kitId) {
+            alert('Please enter a Kit Box Code.');
+            return;
+        }
+        window.location.href = `/kit/${kitId}`;
+    }
+
+    async function loadFirstAidItems() {
+        console.log('Attempting to load first aid items...');
+        try {
+            const response = await fetch('/api/firstaiditems');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            firstAidItems = await response.json();
+            console.log('First aid items loaded:', firstAidItems);
+            populateItemSelect();
+        } catch (error) {
+            console.error('Error loading first aid items:', error);
+        }
+    }
+
+    function populateItemSelect() {
+        console.log('populateItemSelect: firstAidItems =', firstAidItems);
+        itemSelect.innerHTML = '<option value="">Select an item</option>';
+
+        const groupedItems = firstAidItems.reduce((acc, item) => {
+            const category = item.category || 'Uncategorized';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(item);
+            return acc;
+        }, {});
+        console.log('populateItemSelect: groupedItems =', groupedItems);
+
+        sortedCategories.forEach(category => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+
+            groupedItems[category].forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.Item;
+                option.textContent = `${item['Item#']} ${item.Item}`;
+                option.dataset.expiring = item.Expiring;
+                option.dataset.itemNo = item['Item#'];
+                optgroup.appendChild(option);
+            });
+            itemSelect.appendChild(optgroup);
+        });
+    }
+
+    function sanitizeClassName(name) {
+        return name
+            .replace(/\s/g, '-') // Replace spaces with hyphens
+            .replace(/[^a-zA-Z0-9-]/g, '-') // Replace non-alphanumeric (except hyphen) with hyphen
+            .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+            .replace(/^-|-$/g, ''); // Trim leading/trailing hyphens
+    }
+
+    function handleItemSelection() {
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        if (!selectedOption.value) {
+            expiryDateContainer.style.display = 'none';
+            return;
+        }
+
+        const isExpiring = selectedOption.dataset.expiring === 'Yes';
+        expiryDateContainer.style.display = isExpiring ? 'block' : 'none';
+    }
+
+    async function loadItems() {
+        console.log(`Attempting to load items for kit: ${currentKitId}`);
+        if (!currentKitId) return;
+        try {
+            const response = await fetch(`/api/kits/${currentKitId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const kitData = await response.json();
+            console.log('Kit data loaded:', kitData);
+            renderItems(kitData.items);
+            lastEditedDate.textContent = `Last Edited: ${kitData.last_edited || 'N/A'}`;
+
+        } catch (error) {
+            console.error('Error loading items:', error);
+        }
+    }
+
+        function renderItems(groupedItems, sortConfig = { key: 'expiry_date', order: 'asc' }) {
+        console.log('renderItems received groupedItems:', groupedItems);
+        console.log('renderItems called with groupedItems:', groupedItems);
+        itemList.innerHTML = '';
+        if (Object.keys(groupedItems).length === 0) {
+            itemList.innerHTML = '<p>This kit is empty.</p>';
+            return;
+        }
+
+        const expandCollapseContainer = document.createElement('div');
+        expandCollapseContainer.classList.add('expand-collapse-buttons');
+        expandCollapseContainer.innerHTML = `
+            <button id="expand-all-kit">Expand All</button>
+            <button id="collapse-all-kit">Collapse All</button>
+        `;
+        itemList.appendChild(expandCollapseContainer);
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item#</th>
+                    <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th class="qty-column" data-sort="qty">Qty ${sortConfig.key === 'qty' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Status</th>
+                    <th>Remove</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        let itemCounter = 0;
+
+        console.log('Categories in groupedItems:', Object.keys(groupedItems));
+        console.log('Categories in groupedItems:', Object.keys(groupedItems));
+        for (const category in groupedItems) {
+            const categoryRow = document.createElement('tr');
+            categoryRow.classList.add('category-row');
+            categoryRow.dataset.category = category;
+            categoryRow.innerHTML = `<td colspan="7">${category}</td>`;
+            tbody.appendChild(categoryRow);
+
+            const items = groupedItems[category];
+            items.forEach((item) => {
+                itemCounter++;
+                const row = document.createElement('tr');
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                row.classList.add(`item-row`, `category-${sanitizedCategory}`);
+                const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
+                row.innerHTML = `
+                    <td>${itemCounter}</td>
+                    <td>${item.item_no || ''}</td>
+                    <td>${item.name}</td>
+                    <td>${item.expiry_date || ''}</td>
+                    <td class="qty-column">
+                        <div class="qty-controls">
+                            <button class="qty-btn" data-item-id="${item.id}" data-action="decrement">-</button>
+                            <input type="number" class="qty-input" data-item-id="${item.id}" value="${item.qty}" min="0">
+                            <button class="qty-btn" data-item-id="${item.id}" data-action="increment">+</button>
+                        </div>
+                    </td>
+                    <td><span class="item-status ${statusClass}">${item.status}</span></td>
+                    <td><button class="remove-item-btn" data-item-id="${item.id}">✖</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        itemList.appendChild(table);
+
+        // Add event listeners
+        document.getElementById('expand-all-kit').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = '');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.remove('collapsed'));
+        });
+
+        document.getElementById('collapse-all-kit').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = 'none');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.add('collapsed'));
+        });
+        
+        tbody.querySelectorAll('.category-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const category = row.dataset.category;
+                row.classList.toggle('collapsed');
+                tbody.querySelectorAll(`.item-row.category-${category}`).forEach(itemRow => {
+                    itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
+                });
+            });
+        });
+
+        document.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', handleQtyChange);
+        });
+        document.querySelectorAll('.qty-input').forEach(input => {
+            input.addEventListener('change', handleQtyInputChange);
+        });
+        document.querySelectorAll('.remove-item-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => removeItem(e.target.dataset.itemId));
+        });
+    }
+
+    async function addItem(e) {
+        e.preventDefault();
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        if (!selectedOption.value) {
+            alert('Please select an item.');
+            return;
+        }
+
+        const name = selectedOption.value;
+        const isExpiring = selectedOption.dataset.expiring === 'Yes';
+        const item_no = selectedOption.dataset.itemNo;
+        const expiry_date = isExpiring ? expiryDateInput.value : null;
+        const qty = parseInt(quantityInput.value, 10);
+
+        if (isExpiring && !expiry_date) {
+            alert('Please provide an expiry date.');
+            return;
+        }
+        if (isNaN(qty) || qty < 1) {
+            alert('Please provide a valid quantity.');
+            return;
+        }
+
+        const newItem = {
+            id: `id_${new Date().getTime()}`,
+            name,
+            item_no,
+            expiry_date,
+            qty
+        };
+
+        try {
+            await fetch(`/api/kits/${currentKitId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            });
+            addItemForm.reset();
+            handleItemSelection();
+            await loadItems();
+        } catch (error) {
+            console.error('Error adding item:', error);
+        }
+    }
+
+    function handleQtyChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const action = e.target.dataset.action;
+        const input = document.querySelector(`.qty-input[data-item-id="${itemId}"]`);
+        let currentQty = parseInt(input.value, 10);
+
+        if (action === 'increment') {
+            currentQty++;
+        } else if (action === 'decrement' && currentQty > 0) {
+            currentQty--;
+        }
+
+        if (currentQty === 0) {
+            if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                input.value = 0;
+                updateItemQuantity(itemId, 0);
+            } else {
+                // User cancelled, do nothing
+            }
+        } else {
+            input.value = currentQty;
+            updateItemQuantity(itemId, currentQty);
+        }
+    }
+
+    function handleQtyInputChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const newQty = parseInt(e.target.value, 10);
+        if (!isNaN(newQty) && newQty >= 0) {
+            if (newQty === 0) {
+                if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                    updateItemQuantity(itemId, 0);
+                } else {
+                    loadItems(); // Revert
+                }
+            } else {
+                updateItemQuantity(itemId, newQty);
+            }
+        } else {
+            loadItems(); // Revert on invalid input
+        }
+    }
+
+    async function updateItemQuantity(itemId, qty) {
+        try {
+            const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qty })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to update quantity');
+            }
+            await loadItems();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            alert('Could not update quantity. Please try again.');
+            loadItems();
+        }
+    }
+
+    async function removeItem(itemId) {
+        if (!confirm('Are you sure you want to permanently remove this item?')) return;
+
+        try {
+            await fetch(`/api/kits/${currentKitId}/${itemId}`, { method: 'DELETE' });
+            await loadItems();
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    }
+
+    async function loadAllItems() {
+        console.log('loadAllItems function called.');
+        try {
+            const response = await fetch('/api/all_items');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const allItems = await response.json();
+            console.log('API response for all items:', allItems);
+            renderAllItems(allItems);
+            showView('all-items');
+        } catch (error) {
+            console.error('Error loading all items:', error);
+            alert('Failed to load all items. Check console for details.');
+        }
+    }
+
+    function renderAllItems(items, sortConfig = { key: 'expiry_date', order: 'asc' }) {
+        allItemsList.innerHTML = '';
+        if (items.length === 0) {
+            allItemsList.innerHTML = '<p>No items found across all kits.</p>';
+            return;
+        }
+
+        // Group items by category
+        const groupedItems = items.reduce((acc, item) => {
+            const category = item.category || 'Uncategorized';
+            if (!acc[category]) {
+                acc[category] = [];
+            }
+            acc[category].push(item);
+            return acc;
+        }, {});
+
+        // Sort categories alphabetically
+        const sortedCategories = Object.keys(groupedItems).sort();
+
+        const expandCollapseContainer = document.createElement('div');
+        expandCollapseContainer.classList.add('expand-collapse-buttons');
+        expandCollapseContainer.innerHTML = `
+            <button id="expand-all-all-items">Expand All</button>
+            <button id="collapse-all-all-items">Collapse All</button>
+        `;
+        allItemsList.appendChild(expandCollapseContainer);
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item#</th>
+                    <th data-sort="kit_id">Kit ID ${sortConfig.key === 'kit_id' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th class="qty-column-view" data-sort="qty">Qty ${sortConfig.key === 'qty' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        let itemCounter = 0;
+
+        sortedCategories.forEach(category => {
+            const categoryRow = document.createElement('tr');
+            categoryRow.classList.add('category-row');
+            categoryRow.dataset.category = category;
+            categoryRow.innerHTML = `<td colspan="7">${category}</td>`;
+            tbody.appendChild(categoryRow);
+
+            const categoryItems = groupedItems[category];
+            const sortedCategoryItems = [...categoryItems].sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+                if (sortConfig.key === 'expiry_date') {
+                    if (!valA) return 1;
+                    if (!valB) return -1;
+                }
+                if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            sortedCategoryItems.forEach((item) => {
+                itemCounter++;
+                const row = document.createElement('tr');
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                row.classList.add(`item-row`, `category-${sanitizedCategory}`);
+                const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
+                row.innerHTML = `
+                    <td>${itemCounter}</td>
+                    <td>${item.item_no || ''}</td>
+                    <td>${item.kit_id}</td>
+                    <td>${item.name}</td>
+                    <td>${item.expiry_date || ''}</td>
+                    <td>${item.qty}</td>
+                    <td><span class="item-status ${statusClass}">${item.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+
+        allItemsList.appendChild(table);
+
+        document.getElementById('expand-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = '');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.remove('collapsed'));
+        });
+
+        document.getElementById('collapse-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = 'none');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.add('collapsed'));
+        });
+
+        tbody.querySelectorAll('.category-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const category = row.dataset.category;
+                row.classList.toggle('collapsed');
+                tbody.querySelectorAll(`.item-row.category-${category}`).forEach(itemRow => {
+                    itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
+                });
+            });
+        });
+
+        allItemsList.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', (event) => {
+                const sortKey = th.dataset.sort;
+                if (sortConfig.key === sortKey) {
+                    sortConfig.order = sortConfig.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig.key = sortKey;
+                    sortConfig.order = 'asc';
+                }
+                renderAllItems(items, sortConfig);
+            });
+        });
+    }""
+
+    async function addItem(e) {
+        e.preventDefault();
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        if (!selectedOption.value) {
+            alert('Please select an item.');
+            return;
+        }
+
+        const name = selectedOption.value;
+        const isExpiring = selectedOption.dataset.expiring === 'Yes';
+        const item_no = selectedOption.dataset.itemNo;
+        const expiry_date = isExpiring ? expiryDateInput.value : null;
+        const qty = parseInt(quantityInput.value, 10);
+
+        if (isExpiring && !expiry_date) {
+            alert('Please provide an expiry date.');
+            return;
+        }
+        if (isNaN(qty) || qty < 1) {
+            alert('Please provide a valid quantity.');
+            return;
+        }
+
+        const newItem = {
+            id: `id_${new Date().getTime()}`,
+            name,
+            item_no,
+            expiry_date,
+            qty
+        };
+
+        try {
+            await fetch(`/api/kits/${currentKitId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            });
+            addItemForm.reset();
+            handleItemSelection();
+            await loadItems();
+        } catch (error) {
+            console.error('Error adding item:', error);
+        }
+    }
+
+    function handleQtyChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const action = e.target.dataset.action;
+        const input = document.querySelector(`.qty-input[data-item-id="${itemId}"]`);
+        let currentQty = parseInt(input.value, 10);
+
+        if (action === 'increment') {
+            currentQty++;
+        } else if (action === 'decrement' && currentQty > 0) {
+            currentQty--;
+        }
+
+        if (currentQty === 0) {
+            if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                input.value = 0;
+                updateItemQuantity(itemId, 0);
+            } else {
+                // User cancelled, do nothing
+            }
+        } else {
+            input.value = currentQty;
+            updateItemQuantity(itemId, currentQty);
+        }
+    }
+
+    function handleQtyInputChange(e) {
+        const itemId = e.target.dataset.itemId;
+        const newQty = parseInt(e.target.value, 10);
+        if (!isNaN(newQty) && newQty >= 0) {
+            if (newQty === 0) {
+                if (confirm('Set quantity to 0? This will mark the item as Empty. To remove it completely, use the Remove button.')) {
+                    updateItemQuantity(itemId, 0);
+                } else {
+                    loadItems(); // Revert
+                }
+            } else {
+                updateItemQuantity(itemId, newQty);
+            }
+        } else {
+            loadItems(); // Revert on invalid input
+        }
+    }
+
+    async function updateItemQuantity(itemId, qty) {
+        try {
+            const response = await fetch(`/api/kits/${currentKitId}/${itemId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ qty })
+            });
+            if (!response.ok) {
+                throw new Error('Failed to update quantity');
+            }
+            await loadItems();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            alert('Could not update quantity. Please try again.');
+            loadItems();
+        }
+    }
+
+    async function removeItem(itemId) {
+        if (!confirm('Are you sure you want to permanently remove this item?')) return;
+
+        try {
+            await fetch(`/api/kits/${currentKitId}/${itemId}`, { method: 'DELETE' });
+            await loadItems();
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    }
+
+    async function loadAllItems() {
+        console.log('loadAllItems function called.');
+        try {
+            const response = await fetch('/api/all_items');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const allItems = await response.json();
+            console.log('API response for all items:', allItems);
+            renderAllItems(allItems);
+            showView('all-items');
+        } catch (error) {
+            console.error('Error loading all items:', error);
+            alert('Failed to load all items. Check console for details.');
+        }
+    }
+
+    function renderAllItems(items, sortConfig = { key: 'expiry_date', order: 'asc' }) {
+        allItemsList.innerHTML = '';
+        if (items.length === 0) {
+            allItemsList.innerHTML = '<p>No items found across all kits.</p>';
+            return;
+        }
+
+        // Group items by category
+        
+
+        // Sort categories alphabetically
+        const sortedCategories = Object.keys(groupedItems).sort();
+
+        const expandCollapseContainer = document.createElement('div');
+        expandCollapseContainer.classList.add('expand-collapse-buttons');
+        expandCollapseContainer.innerHTML = `
+            <button id="expand-all-all-items">Expand All</button>
+            <button id="collapse-all-all-items">Collapse All</button>
+        `;
+        allItemsList.appendChild(expandCollapseContainer);
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item#</th>
+                    <th data-sort="kit_id">Kit ID ${sortConfig.key === 'kit_id' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="name">Item Name ${sortConfig.key === 'name' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th data-sort="expiry_date">Expiry Date ${sortConfig.key === 'expiry_date' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th class="qty-column-view" data-sort="qty">Qty ${sortConfig.key === 'qty' ? (sortConfig.order === 'asc' ? '▲' : '▼') : ''}</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        let itemCounter = 0;
+
+        sortedCategories.forEach(category => {
+            const categoryRow = document.createElement('tr');
+            categoryRow.classList.add('category-row');
+            categoryRow.dataset.category = category; // Add data-category attribute
+            categoryRow.innerHTML = `<td colspan="7">${category}</td>`;
+            tbody.appendChild(categoryRow);
+
+            const categoryItems = groupedItems[category];
+            
+            // Sort items within each category
+            const sortedCategoryItems = [...categoryItems].sort((a, b) => {
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+
+                if (sortConfig.key === 'expiry_date') {
+                    if (!valA) return 1;
+                    if (!valB) return -1;
+                }
+
+                if (valA < valB) return sortConfig.order === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.order === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            sortedCategoryItems.forEach((item) => {
+                itemCounter++;
+                const row = document.createElement('tr');
+                const sanitizedCategory = category.toLowerCase().replace(/[^a-z0-9]+/g, '-'); // Sanitize category for class name
+                row.classList.add(`item-row`, `category-${sanitizedCategory}`); // Add item-row and category class
+                const statusClass = `status-${item.status.toLowerCase().replace(' ', '-')}`;
+                row.innerHTML = `
+                    <td>${itemCounter}</td>
+                    <td>${item.item_no || ''}</td>
+                    <td>${item.kit_id}</td>
+                    <td>${item.name}</td>
+                    <td>${item.expiry_date || ''}</td>
+                    <td>${item.qty}</td>
+                    <td><span class="item-status ${statusClass}">${item.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        });
+
+        allItemsList.appendChild(table);
+
+        document.getElementById('expand-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = '');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.remove('collapsed'));
+        });
+
+        document.getElementById('collapse-all-all-items').addEventListener('click', () => {
+            tbody.querySelectorAll('.item-row').forEach(row => row.style.display = 'none');
+            tbody.querySelectorAll('.category-row').forEach(row => row.classList.add('collapsed'));
+        });
+
+        tbody.querySelectorAll('.category-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const category = row.dataset.category;
+                row.classList.toggle('collapsed');
+                tbody.querySelectorAll(`.item-row.category-${sanitizeClassName(category)}`).forEach(itemRow => {
+                    itemRow.style.display = itemRow.style.display === 'none' ? '' : 'none';
+                });
+            });
+        });
+
+        // Add event listeners for sorting
+        allItemsList.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', (event) => {
+                const sortKey = th.dataset.sort;
+                if (sortConfig.key === sortKey) {
+                    sortConfig.order = sortConfig.order === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortConfig.key = sortKey;
+                    sortConfig.order = 'asc';
+                }
+                renderAllItems(items, sortConfig);
+            });
+        });
+    }
+
+    // --- Initial State ---
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts.length >= 3 && pathParts[1] === 'kit' && pathParts[2]) {
+        currentKitId = pathParts[2];
+        kitTitle.textContent = `Kit: ${currentKitId}`;
+        loadFirstAidItems();
+        loadItems();
+        showView('kit-management');
+    } else {
+        showView('kit-selection');
+    }
+});

@@ -23,10 +23,11 @@ class DatabasePool:
     async def initialize(cls):
         """Initialize the connection pool."""
         if cls._pool is None:
+            # Optimize pool size for serverless environment to prevent Neon connection exhaustion
             cls._pool = await asyncpg.create_pool(
                 DATABASE_URL,
-                min_size=2,
-                max_size=10,
+                min_size=1,
+                max_size=2,
                 command_timeout=60
             )
             print("[✓] Database pool initialized")
