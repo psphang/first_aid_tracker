@@ -420,13 +420,48 @@ tr:nth-child(even) {
     border-radius: 4px;
 }
 
+#recent-items-list .recent-item.recent-change {
+    background-color: #f0f7ff;
+    border-color: #b3d7ff;
+}
+
+.recent-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
 #recent-items-list .recent-item-name {
     font-weight: 500;
+}
+
+.recent-item-changes {
+    color: #0056b3;
+    font-size: 0.85em;
+}
+
+.recent-item-detail {
+    color: #6c757d;
+    font-size: 0.85em;
 }
 
 #recent-items-list .recent-item-time {
     color: #6c757d;
     font-size: 0.85em;
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
+.recent-section-header {
+    font-weight: 600;
+    color: #333;
+    margin: 8px 0 4px 0;
+    font-size: 0.9em;
+}
+
+.recent-divider {
+    border-top: 1px solid #dee2e6;
+    margin: 10px 0;
 }
 
 /* 3-Dot Menu */
