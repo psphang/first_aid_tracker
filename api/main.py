@@ -2,7 +2,7 @@ import asyncpg
 import os
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import date, timedelta, datetime
@@ -40,6 +40,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def find_public_dir():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
+        os.path.join(os.getcwd(), "public"),
+        "public",
+    ]
+    for p in candidates:
+        if os.path.isdir(p):
+            return p
+    return None
+
+PUBLIC_DIR = None
+
+def read_file(filename):
+    global PUBLIC_DIR
+    if PUBLIC_DIR is None:
+        PUBLIC_DIR = find_public_dir()
+    if PUBLIC_DIR:
+        fpath = os.path.join(PUBLIC_DIR, filename)
+        if os.path.isfile(fpath):
+            return open(fpath, encoding="utf-8").read()
+    return None
+
 def get_item_status(item):
     if item.get('qty', 0) == 0:
         return "Empty"
@@ -60,25 +83,6 @@ def get_item_status(item):
 @app.on_event("startup")
 async def startup_event():
     await DatabasePool.initialize()
-    global INDEX_HTML, EDIT_HTML, APP_JS, EDIT_JS, STYLES_CSS
-    for base_dir in [
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
-        os.path.join(os.getcwd(), "public"),
-        "public",
-    ]:
-        if os.path.isdir(base_dir):
-            INDEX_HTML = open(os.path.join(base_dir, "index.html")).read()
-            EDIT_HTML = open(os.path.join(base_dir, "edit_items.html")).read()
-            APP_JS = open(os.path.join(base_dir, "app.js")).read()
-            EDIT_JS = open(os.path.join(base_dir, "edit_items.js")).read()
-            STYLES_CSS = open(os.path.join(base_dir, "styles.css")).read()
-            break
-
-INDEX_HTML = ""
-EDIT_HTML = ""
-APP_JS = ""
-EDIT_JS = ""
-STYLES_CSS = ""
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -148,20 +152,35 @@ async def delete_first_aid_item_endpoint(item_name: str):
 
 @app.get("/styles.css")
 async def serve_css():
-    return HTMLResponse(content=STYLES_CSS, media_type="text/css")
+    content = read_file("styles.css")
+    if content:
+        return HTMLResponse(content=content, media_type="text/css")
+    return HTMLResponse(content="not found", status_code=404)
 
 @app.get("/app.js")
 async def serve_app_js():
-    return HTMLResponse(content=APP_JS, media_type="application/javascript")
+    content = read_file("app.js")
+    if content:
+        return HTMLResponse(content=content, media_type="application/javascript")
+    return HTMLResponse(content="not found", status_code=404)
 
 @app.get("/edit_items.js")
 async def serve_edit_js():
-    return HTMLResponse(content=EDIT_JS, media_type="application/javascript")
+    content = read_file("edit_items.js")
+    if content:
+        return HTMLResponse(content=content, media_type="application/javascript")
+    return HTMLResponse(content="not found", status_code=404)
 
 @app.get("/edit_items")
 async def serve_edit_page():
-    return HTMLResponse(content=EDIT_HTML, media_type="text/html")
+    content = read_file("edit_items.html")
+    if content:
+        return HTMLResponse(content=content, media_type="text/html")
+    return HTMLResponse(content="not found", status_code=404)
 
 @app.get("/{full_path:path}")
 async def serve_spa(full_path: str):
-    return HTMLResponse(content=INDEX_HTML, media_type="text/html")
+    content = read_file("index.html")
+    if content:
+        return HTMLResponse(content=content, media_type="text/html")
+    return HTMLResponse(content="not found", status_code=404)
