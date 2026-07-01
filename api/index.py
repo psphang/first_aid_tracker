@@ -1,4 +1,3 @@
-// api/index.py
 import asyncpg
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
