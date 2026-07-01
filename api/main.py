@@ -92,6 +92,28 @@ async def shutdown_event():
 async def health_check():
     return {"status": "ok", "service": "first-aid-tracker-api"}
 
+@app.get("/api/debug-paths")
+async def debug_paths():
+    results = {}
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
+        os.path.join(os.getcwd(), "public"),
+        "public",
+        "/var/task/public",
+        "/var/runtime/public",
+    ]
+    for p in candidates:
+        results[p] = os.path.isdir(p)
+    results["cwd"] = os.getcwd()
+    results["file_dir"] = os.path.dirname(os.path.abspath(__file__))
+    results["ls_file_dir"] = os.listdir(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.isdir(os.path.join(os.getcwd())):
+        try:
+            results["ls_cwd"] = os.listdir(os.getcwd())
+        except:
+            pass
+    return results
+
 @app.get("/api/firstaiditems")
 async def get_first_aid_items():
     data = await get_all_first_aid_items()
