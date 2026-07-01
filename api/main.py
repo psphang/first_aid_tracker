@@ -1,7 +1,8 @@
 import asyncpg
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 from datetime import date, timedelta, datetime
@@ -59,6 +60,19 @@ def get_item_status(item):
 @app.on_event("startup")
 async def startup_event():
     await DatabasePool.initialize()
+    global INDEX_HTML, EDIT_HTML, APP_JS, EDIT_JS, STYLES_CSS
+    base = os.path.join(os.path.dirname(__file__), "..", "public")
+    INDEX_HTML = open(os.path.join(base, "index.html")).read()
+    EDIT_HTML = open(os.path.join(base, "edit_items.html")).read()
+    APP_JS = open(os.path.join(base, "app.js")).read()
+    EDIT_JS = open(os.path.join(base, "edit_items.js")).read()
+    STYLES_CSS = open(os.path.join(base, "styles.css")).read()
+
+INDEX_HTML = ""
+EDIT_HTML = ""
+APP_JS = ""
+EDIT_JS = ""
+STYLES_CSS = ""
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -125,3 +139,23 @@ async def update_first_aid_item_endpoint(item_name: str, updated_item: Dict):
 async def delete_first_aid_item_endpoint(item_name: str):
     await delete_first_aid_item(item_name)
     return {"message": "Item deleted successfully"}
+
+@app.get("/styles.css")
+async def serve_css():
+    return HTMLResponse(content=STYLES_CSS, media_type="text/css")
+
+@app.get("/app.js")
+async def serve_app_js():
+    return HTMLResponse(content=APP_JS, media_type="application/javascript")
+
+@app.get("/edit_items.js")
+async def serve_edit_js():
+    return HTMLResponse(content=EDIT_JS, media_type="application/javascript")
+
+@app.get("/edit_items")
+async def serve_edit_page():
+    return HTMLResponse(content=EDIT_HTML, media_type="text/html")
+
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    return HTMLResponse(content=INDEX_HTML, media_type="text/html")
