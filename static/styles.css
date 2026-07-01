@@ -562,6 +562,46 @@ tr:nth-child(even) {
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
+/* Draggable Modal */
+.modal-draggable {
+    position: absolute;
+    cursor: default;
+}
+
+.drag-handle {
+    cursor: move;
+    user-select: none;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Scrollable content */
+.modal-scrollable {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.modal-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-scrollable::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .modal-small {
     max-width: 350px;
 }

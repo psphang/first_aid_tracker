@@ -61,12 +61,12 @@
 
         <!-- Recent Items Modal -->
         <div id="recent-modal" class="modal hidden">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content modal-draggable" id="recent-modal-content">
+                <div class="modal-header drag-handle">
                     <h3>Recently Edited Items</h3>
                     <button id="close-recent-modal" class="close-modal-btn">&times;</button>
                 </div>
-                <div id="recent-items-list"></div>
+                <div id="recent-items-list" class="modal-scrollable"></div>
             </div>
         </div>
 

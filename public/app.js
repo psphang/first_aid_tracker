@@ -72,6 +72,37 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === recentModal) recentModal.classList.add('hidden');
     });
 
+    // Draggable modal
+    const recentModalContent = document.getElementById('recent-modal-content');
+    const dragHandle = recentModalContent.querySelector('.drag-handle');
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        const rect = recentModalContent.getBoundingClientRect();
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+        recentModalContent.style.transition = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.clientX - dragOffsetX;
+        const y = e.clientY - dragOffsetY;
+        const maxX = window.innerWidth - recentModalContent.offsetWidth;
+        const maxY = window.innerHeight - recentModalContent.offsetHeight;
+        recentModalContent.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+        recentModalContent.style.top = Math.max(0, Math.min(y, maxY)) + 'px';
+        recentModalContent.style.transform = 'none';
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
     // Edit modal listeners
     closeEditModal.addEventListener('click', () => editModal.classList.add('hidden'));
     cancelEditBtn.addEventListener('click', () => editModal.classList.add('hidden'));
@@ -279,6 +310,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleRecentPanel() {
+        recentModalContent.style.left = '50%';
+        recentModalContent.style.top = '50%';
+        recentModalContent.style.transform = 'translate(-50%, -50%)';
         recentModal.classList.remove('hidden');
     }
 
