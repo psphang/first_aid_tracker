@@ -19,6 +19,11 @@ body {
     box-sizing: border-box;
 }
 
+/* Hidden utility */
+.hidden {
+    display: none !important;
+}
+
 /* View Management */
 #kit-selection-view,
 #kit-management-view,
