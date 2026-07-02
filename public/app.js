@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="recent-item-name">${entry.name}</span>
                         <span class="recent-item-changes">${actionLabel}: ${entry.changes.join(' | ')}</span>
                     </div>
-                    <span class="recent-item-time">${getTimeAgo(new Date(), entry.time)}</span>
+                    <span class="recent-item-time">${getTimeAgo(new Date(), new Date(entry.time))}</span>
                 `;
                 recentItemsList.appendChild(div);
             });
