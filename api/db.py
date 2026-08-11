@@ -48,10 +48,22 @@ class DatabasePool:
         return cls._pool.acquire()
 
 
+async def get_kit_id_by_name(conn, kit_id: str) -> Optional[str]:
+    """Helper to find the canonical kit ID case-insensitively."""
+    row = await conn.fetchrow(
+        "SELECT kit_id FROM kits WHERE LOWER(kit_id) = LOWER($1)",
+        kit_id
+    )
+    return row['kit_id'] if row else None
+
 # Database query functions
 async def get_kit_items(kit_id: str) -> Dict[str, Any]:
     """Get all items for a specific kit."""
     async with await DatabasePool.get_connection() as conn:
+        canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
+        if not canonical_kit_id:
+             return {"items": {}, "last_edited": None, "canonical_id": kit_id}
+             
         items = await conn.fetch(
             """
             SELECT 
@@ -61,16 +73,13 @@ async def get_kit_items(kit_id: str) -> Dict[str, Any]:
             WHERE kit_id = $1
             ORDER BY name
             """,
-            kit_id
+            canonical_kit_id
         )
         
         kit = await conn.fetchrow(
             "SELECT kit_id, last_edited FROM kits WHERE kit_id = $1",
-            kit_id
+            canonical_kit_id
         )
-        
-        if not kit:
-            return {"items": [], "last_edited": None}
         
         # Get first aid item details
         item_details_list = await conn.fetch(
@@ -111,7 +120,8 @@ async def get_kit_items(kit_id: str) -> Dict[str, Any]:
         
         return {
             "items": grouped_items,
-            "last_edited": kit['last_edited'].isoformat() if kit['last_edited'] else None
+            "last_edited": kit['last_edited'].isoformat() if kit['last_edited'] else None,
+            "canonical_id": canonical_kit_id
         }
 
 
@@ -119,15 +129,18 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
     """Add an item to a kit."""
     async with await DatabasePool.get_connection() as conn:
         async with conn.transaction():
-            # Ensure kit exists
-            await conn.execute(
-                """
-                INSERT INTO kits (kit_id)
-                VALUES ($1)
-                ON CONFLICT (kit_id) DO NOTHING
-                """,
-                kit_id
-            )
+            canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
+            if not canonical_kit_id:
+                canonical_kit_id = kit_id
+                # Ensure kit exists
+                await conn.execute(
+                    """
+                    INSERT INTO kits (kit_id)
+                    VALUES ($1)
+                    ON CONFLICT (kit_id) DO NOTHING
+                    """,
+                    canonical_kit_id
+                )
             
             # Parse expiry_date string to date object for PostgreSQL
             expiry_date = item_data.get('expiry_date')
@@ -142,7 +155,7 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
                 VALUES ($1, $2, $3, $4, $5, $6)
                 """,
                 item_data['id'],
-                kit_id,
+                canonical_kit_id,
                 item_data['name'],
                 item_data.get('item_no'),
                 expiry_date,
@@ -157,7 +170,7 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
                 WHERE kit_id = $2
                 """,
                 datetime.now(timezone.utc),
-                kit_id
+                canonical_kit_id
             )
     
     return item_data
@@ -166,6 +179,9 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
 async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
     """Update an item's quantity."""
     async with await DatabasePool.get_connection() as conn:
+        canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
+        if not canonical_kit_id:
+             raise Exception("Kit not found")
         async with conn.transaction():
             result = await conn.execute(
                 """
@@ -176,7 +192,7 @@ async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
                 qty,
                 datetime.now(timezone.utc),
                 item_id,
-                kit_id
+                canonical_kit_id
             )
             
             # Update kit's last_edited timestamp
@@ -187,7 +203,7 @@ async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
                 WHERE kit_id = $2
                 """,
                 datetime.now(timezone.utc),
-                kit_id
+                canonical_kit_id
             )
     
     return True
@@ -196,6 +212,9 @@ async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
 async def remove_item_from_kit(kit_id: str, item_id: str) -> bool:
     """Remove an item from a kit."""
     async with await DatabasePool.get_connection() as conn:
+        canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
+        if not canonical_kit_id:
+             raise Exception("Kit not found")
         async with conn.transaction():
             await conn.execute(
                 """
@@ -203,7 +222,7 @@ async def remove_item_from_kit(kit_id: str, item_id: str) -> bool:
                 WHERE id = $1 AND kit_id = $2
                 """,
                 item_id,
-                kit_id
+                canonical_kit_id
             )
             
             # Update kit's last_edited timestamp
@@ -214,7 +233,7 @@ async def remove_item_from_kit(kit_id: str, item_id: str) -> bool:
                 WHERE kit_id = $2
                 """,
                 datetime.now(timezone.utc),
-                kit_id
+                canonical_kit_id
             )
     
     return True

@@ -108,6 +108,7 @@ async def get_first_aid_items():
 @app.get("/api/kits/{kit_id}")
 async def get_kit_items_endpoint(kit_id: str):
     kit_data = await get_kit_items(kit_id)
+    # The items are already in kit_data['items']
     grouped_items = kit_data.get('items', {})
     for category_items in grouped_items.values():
         for item in category_items:

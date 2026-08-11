@@ -222,6 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/kits/${currentKitId}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const kitData = await response.json();
+            
+            // Use canonical ID for display
+            if (kitData.canonical_id) {
+                currentKitId = kitData.canonical_id;
+                kitTitle.textContent = `Kit: ${currentKitId}`;
+            }
+
             allKitItems = [];
             Object.values(kitData.items).forEach(items => allKitItems.push(...items));
             renderItems(kitData.items);
