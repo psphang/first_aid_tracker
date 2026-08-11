@@ -1,17 +1,17 @@
 {
-  "builds": [
-    {
-      "src": "api/main.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": "public/**"
-      }
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "vercel-python@3.12"
     }
-  ],
+  },
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/main.py" },
-    { "src": "/health", "dest": "/api/main.py" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/api/main.py" }
+    {
+      "src": "/api/(.*)",
+      "dest": "api/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
+    }
   ]
 }

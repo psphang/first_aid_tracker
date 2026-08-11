@@ -41,56 +41,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def find_public_dir():
-    candidates = [
-        os.path.join(os.getcwd(), "static"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "static"),
-        os.path.join(os.getcwd(), "public"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public"),
-        "static",
-        "public",
-    ]
-    for p in candidates:
-        if os.path.isdir(p):
-            return p
-    return None
-
-PUBLIC_DIR = None
-
-def read_file(filename):
-    global PUBLIC_DIR
-    if PUBLIC_DIR is None:
-        PUBLIC_DIR = find_public_dir()
-    if PUBLIC_DIR:
-        fpath = os.path.join(PUBLIC_DIR, filename)
-        if os.path.isfile(fpath):
-            return open(fpath, encoding="utf-8").read()
-    return None
-
-def get_item_status(item):
-    if item.get('qty', 0) == 0:
-        return "Empty"
-    if item.get('expiry_date'):
-        try:
-            expiry = date.fromisoformat(item['expiry_date'])
-            today = date.today()
-            if expiry < today:
-                return "Expired"
-            elif expiry <= today + timedelta(days=30):
-                return "Expires Soon"
-            else:
-                return "OK"
-        except (ValueError, TypeError):
-            return "Invalid Date"
-    return "OK"
-
-@app.on_event("startup")
-async def startup_event():
+# Ensure database is initialized on demand since Vercel functions are stateless
+async def ensure_db_initialized():
     await DatabasePool.initialize()
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    await DatabasePool.close()
+# Add a middleware to ensure DB is ready for each request if needed
+@app.middleware("http")
+async def db_session_middleware(request: Request, call_next):
+    await ensure_db_initialized()
+    response = await call_next(request)
+    return response
 
 @app.get("/api/health")
 async def health_check():
