@@ -96,14 +96,22 @@ async def get_first_aid_items():
 
 @app.get("/api/kits/{kit_id}")
 async def get_kit_items_endpoint(kit_id: str):
-    kit_data = await get_kit_items(kit_id)
-    # The items are already in kit_data['items']
-    grouped_items = kit_data.get('items', {})
-    for category_items in grouped_items.values():
-        for item in category_items:
-            item['status'] = get_item_status(item)
-            item['Expiring'] = item.get('Expiring', 'No')
-    return kit_data
+    try:
+        kit_data = await get_kit_items(kit_id)
+        # Check if database is offline (from db.py fallback)
+        if kit_data.get("warning") == "Database offline":
+            return kit_data
+            
+        # The items are already in kit_data['items']
+        grouped_items = kit_data.get('items', {})
+        for category_items in grouped_items.values():
+            for item in category_items:
+                item['status'] = get_item_status(item)
+                item['Expiring'] = item.get('Expiring', 'No')
+        return kit_data
+    except Exception as e:
+        print(f"[!] Error fetching kit {kit_id}: {e}")
+        raise HTTPException(status_code=500, detail={"error": "Internal server error", "message": str(e)})
 
 @app.post("/api/kits/{kit_id}")
 async def add_item_to_kit_endpoint(kit_id: str, item: Item):

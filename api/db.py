@@ -9,17 +9,26 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timezone
 
 # Get database URL from environment or use default
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 class DatabasePool:
     """Manages PostgreSQL connection pool for the application."""
     
     _pool: Optional[asyncpg.Pool] = None
+    _initialized: bool = False
     
     @classmethod
     async def initialize(cls):
         """Initialize the connection pool."""
-        if cls._pool is None:
+        if cls._initialized:
+            return
+        
+        if not DATABASE_URL:
+            print("[!] DATABASE_URL not set. Database features disabled.")
+            cls._initialized = True
+            return
+
+        try:
             # Optimize pool size for serverless environment to prevent Neon connection exhaustion
             cls._pool = await asyncpg.create_pool(
                 DATABASE_URL,
@@ -27,7 +36,11 @@ class DatabasePool:
                 max_size=2,
                 command_timeout=60
             )
+            cls._initialized = True
             print("[✓] Database pool initialized")
+        except Exception as e:
+            print(f"[!] Database connection failed: {e}")
+            cls._initialized = True # Prevent repeated attempts
     
     @classmethod
     async def close(cls):
@@ -35,13 +48,18 @@ class DatabasePool:
         if cls._pool:
             await cls._pool.close()
             cls._pool = None
+            cls._initialized = False
             print("[✓] Database pool closed")
     
     @classmethod
     async def get_connection(cls):
         """Get a connection from the pool."""
-        if cls._pool is None:
+        if not cls._initialized:
             await cls.initialize()
+            
+        if cls._pool is None:
+            # Return None to signal connection failure
+            return None
         return cls._pool.acquire()
 
 
@@ -56,7 +74,12 @@ async def get_kit_id_by_name(conn, kit_id: str) -> Optional[str]:
 # Database query functions
 async def get_kit_items(kit_id: str) -> Dict[str, Any]:
     """Get all items for a specific kit."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        print(f"[!] Database connection unavailable for get_kit_items")
+        return {"items": {}, "last_edited": None, "canonical_id": kit_id, "warning": "Database offline"}
+
+    async with conn:
         canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
         if not canonical_kit_id:
              return {"items": {}, "last_edited": None, "canonical_id": kit_id}
@@ -124,7 +147,10 @@ async def get_kit_items(kit_id: str) -> Dict[str, Any]:
 
 async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
     """Add an item to a kit."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         async with conn.transaction():
             canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
             if not canonical_kit_id:
@@ -175,7 +201,10 @@ async def add_item_to_kit(kit_id: str, item_data: Dict[str, Any]) -> Dict[str, A
 
 async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
     """Update an item's quantity."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
         if not canonical_kit_id:
              raise Exception("Kit not found")
@@ -208,7 +237,10 @@ async def update_item_quantity(kit_id: str, item_id: str, qty: int) -> bool:
 
 async def remove_item_from_kit(kit_id: str, item_id: str) -> bool:
     """Remove an item from a kit."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         canonical_kit_id = await get_kit_id_by_name(conn, kit_id)
         if not canonical_kit_id:
              raise Exception("Kit not found")
@@ -238,7 +270,11 @@ async def remove_item_from_kit(kit_id: str, item_id: str) -> bool:
 
 async def get_all_first_aid_items() -> Dict[str, List[Dict[str, Any]]]:
     """Get all first aid items grouped by category."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        return {"Uncategorized": [{"No": "0", "Item#": "", "Item": "Database offline", "category": "Uncategorized", "Expiring": "No"}]}
+    
+    async with conn:
         items = await conn.fetch(
             """
             SELECT id, item_no, item_name, item_code, category, expiring
@@ -266,7 +302,10 @@ async def get_all_first_aid_items() -> Dict[str, List[Dict[str, Any]]]:
 
 async def add_first_aid_item(item_data: Dict[str, Any]) -> Dict[str, Any]:
     """Add a new first aid item."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         # Get next item_no
         max_no = await conn.fetchval(
             "SELECT MAX(item_no) FROM first_aid_items"
@@ -293,7 +332,10 @@ async def add_first_aid_item(item_data: Dict[str, Any]) -> Dict[str, Any]:
 
 async def update_first_aid_item(item_name: str, item_data: Dict[str, Any]) -> bool:
     """Update a first aid item."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         result = await conn.execute(
             """
             UPDATE first_aid_items
@@ -318,7 +360,10 @@ async def update_first_aid_item(item_name: str, item_data: Dict[str, Any]) -> bo
 
 async def delete_first_aid_item(item_name: str) -> bool:
     """Delete a first aid item."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        raise Exception("Database offline")
+    async with conn:
         await conn.execute(
             "DELETE FROM first_aid_items WHERE item_name = $1",
             item_name
@@ -329,7 +374,11 @@ async def delete_first_aid_item(item_name: str) -> bool:
 
 async def get_all_items_across_kits() -> Dict[str, List[Dict[str, Any]]]:
     """Get all items across all kits, grouped by category."""
-    async with await DatabasePool.get_connection() as conn:
+    conn = await DatabasePool.get_connection()
+    if not conn:
+        return {"Uncategorized": [{"name": "Database offline"}]}
+    
+    async with conn:
         items = await conn.fetch(
             """
             SELECT 
