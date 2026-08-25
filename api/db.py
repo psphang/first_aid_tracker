@@ -10,14 +10,27 @@ from datetime import date, datetime, timezone
 
 # Get database URL from environment or use default
 raw_db_url = os.getenv("DATABASE_URL") or os.getenv("NEON_DATABASE_URL")
-if raw_db_url and "sslmode" not in raw_db_url:
-    # Ensure sslmode=require for Neon PostgreSQL
-    if "?" in raw_db_url:
-        DATABASE_URL = f"{raw_db_url}&sslmode=require"
+if raw_db_url:
+    # Redact password for logging
+    if "@" in raw_db_url:
+        parts = raw_db_url.split("@")
+        user_info = parts[0].split("://")[1].split(":")[0]
+        host_info = parts[1]
+        print(f"[DEBUG] Connecting to database: postgresql://{user_info}:****@{host_info}")
     else:
-        DATABASE_URL = f"{raw_db_url}?sslmode=require"
+        print("[DEBUG] Connecting to database (URL structure not as expected)")
+
+    if "sslmode" not in raw_db_url:
+        # Ensure sslmode=require for Neon PostgreSQL
+        if "?" in raw_db_url:
+            DATABASE_URL = f"{raw_db_url}&sslmode=require"
+        else:
+            DATABASE_URL = f"{raw_db_url}?sslmode=require"
+    else:
+        DATABASE_URL = raw_db_url
 else:
-    DATABASE_URL = raw_db_url
+    print("[!] No DATABASE_URL or NEON_DATABASE_URL found.")
+    DATABASE_URL = None
 
 class DatabasePool:
     """Manages PostgreSQL connection pool for the application."""
