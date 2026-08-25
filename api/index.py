@@ -71,15 +71,9 @@ def read_file(file_path):
         return None
 
 # Ensure database is initialized on demand since Vercel functions are stateless
-async def ensure_db_initialized():
+async def get_db_pool():
     await DatabasePool.initialize()
-
-# Add a middleware to ensure DB is ready for each request if needed
-@app.middleware("http")
-async def db_session_middleware(request: Request, call_next):
-    await ensure_db_initialized()
-    response = await call_next(request)
-    return response
+    return DatabasePool
 
 @app.get("/api/health")
 async def health_check():
@@ -87,18 +81,21 @@ async def health_check():
 
 @app.get("/api/firstaiditems")
 async def get_first_aid_items():
-    data = await get_all_first_aid_items()
-    items = []
-    for category, category_items in data.items():
-        items.extend(category_items)
-    items.sort(key=lambda x: x.get('Item', '').lower())
-    return {"items": items, "last_edited": None}
+    try:
+        data = await get_all_first_aid_items()
+        items = []
+        for category, category_items in data.items():
+            items.extend(category_items)
+        items.sort(key=lambda x: x.get('Item', '').lower())
+        return {"items": items, "last_edited": None}
+    except Exception as e:
+        print(f"[!] Error fetching items: {e}")
+        return {"items": [], "error": str(e)}
 
 @app.get("/kit/{kit_id}")
 async def serve_kit_page(kit_id: str):
     """
     Serves the SPA index.html for direct navigation to a kit page.
-    The frontend JS (app.js) handles the extraction of `kit_id` from the URL.
     """
     content = read_file("index.html")
     if content:
@@ -122,7 +119,7 @@ async def get_kit_items_endpoint(kit_id: str):
         return kit_data
     except Exception as e:
         print(f"[!] Error fetching kit {kit_id}: {e}")
-        raise HTTPException(status_code=500, detail={"error": "Internal server error", "message": str(e)})
+        return {"items": {}, "error": str(e), "message": "Internal server error"}
 
 @app.post("/api/kits/{kit_id}")
 async def add_item_to_kit_endpoint(kit_id: str, item: Item):
