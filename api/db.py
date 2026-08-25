@@ -9,7 +9,15 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timezone
 
 # Get database URL from environment or use default
-DATABASE_URL = os.getenv("DATABASE_URL")
+raw_db_url = os.getenv("DATABASE_URL") or os.getenv("NEON_DATABASE_URL")
+if raw_db_url and "sslmode" not in raw_db_url:
+    # Ensure sslmode=require for Neon PostgreSQL
+    if "?" in raw_db_url:
+        DATABASE_URL = f"{raw_db_url}&sslmode=require"
+    else:
+        DATABASE_URL = f"{raw_db_url}?sslmode=require"
+else:
+    DATABASE_URL = raw_db_url
 
 class DatabasePool:
     """Manages PostgreSQL connection pool for the application."""
