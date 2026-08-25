@@ -94,6 +94,17 @@ async def get_first_aid_items():
     items.sort(key=lambda x: x.get('Item', '').lower())
     return {"items": items, "last_edited": None}
 
+@app.get("/kit/{kit_id}")
+async def serve_kit_page(kit_id: str):
+    """
+    Serves the SPA index.html for direct navigation to a kit page.
+    The frontend JS (app.js) handles the extraction of `kit_id` from the URL.
+    """
+    content = read_file("index.html")
+    if content:
+        return HTMLResponse(content=content, media_type="text/html")
+    return HTMLResponse(content="not found", status_code=404)
+
 @app.get("/api/kits/{kit_id}")
 async def get_kit_items_endpoint(kit_id: str):
     try:
