@@ -41,6 +41,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Helper Functions ---
+def get_item_status(item):
+    if item.get('qty', 0) == 0:
+        return "Empty"
+    if item.get('expiry_date'):
+        try:
+            from datetime import date
+            expiry = date.fromisoformat(item['expiry_date'])
+            today = date.today()
+            if expiry < today:
+                return "Expired"
+            elif expiry <= today + timedelta(days=30):
+                return "Expires Soon"
+            else:
+                return "OK"
+        except (ValueError, TypeError):
+            return "Invalid Date"
+    return "OK"
+
+def read_file(file_path):
+    public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
+    full_path = os.path.join(public_dir, file_path)
+    try:
+        with open(full_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        print(f"Error reading file {full_path}: {e}")
+        return None
+
 # Ensure database is initialized on demand since Vercel functions are stateless
 async def ensure_db_initialized():
     await DatabasePool.initialize()
