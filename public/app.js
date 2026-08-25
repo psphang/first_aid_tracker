@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter a Kit Box Code.');
             return;
         }
-        window.location.href = `/kit/${kitId}`;
+        window.location.href = `/kit/${encodeURIComponent(kitId)}`;
     }
 
     async function loadFirstAidItems() {
