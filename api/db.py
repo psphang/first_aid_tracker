@@ -9,10 +9,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime, timezone
 
 # Get database URL from environment or use default
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_p4lbiRzPfCL9@ep-proud-bird-aqn2uuie-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
-)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 class DatabasePool:
     """Manages PostgreSQL connection pool for the application."""
