@@ -156,7 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter a Kit Box Code.');
             return;
         }
-        window.location.href = `/kit/${encodeURIComponent(kitId)}`;
+        // Consistent case handling (uppercasing) for navigation
+        window.location.href = `/kit/${encodeURIComponent(kitId.toUpperCase())}`;
     }
 
     async function loadFirstAidItems() {
@@ -743,7 +744,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial State ---
     const pathParts = window.location.pathname.split('/');
     if (pathParts.length >= 3 && pathParts[1] === 'kit' && pathParts[2]) {
-        currentKitId = pathParts[2];
+        // Decode the URL component which might be encoded
+        currentKitId = decodeURIComponent(pathParts[2]);
         kitTitle.textContent = `Kit: ${currentKitId}`;
         loadFirstAidItems();
         loadItems();
