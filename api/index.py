@@ -10,9 +10,9 @@ import uvicorn
 from datetime import date, timedelta, datetime, timezone
 
 # --- Configuration ---
-DATA_FILE = "first_aid_kit.json"
-ITEMS_FILE = "firstIAiditem.json"
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+DATA_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "first_aid_kit.json")
+ITEMS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "firstIAiditem.json")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 
 # --- Data Models ---
 class Item(BaseModel):
@@ -296,5 +296,4 @@ async def download_first_aid_item_file():
     return FileResponse(ITEMS_FILE, media_type="application/json", filename="firstIAiditem.json")
 
 # --- Main ---
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+# uvicorn is not needed here when running on Vercel.
