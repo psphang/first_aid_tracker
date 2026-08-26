@@ -157,8 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please enter a Kit Box Code.');
             return;
         }
-        // Consistent case handling (uppercasing) for navigation
-        window.location.href = `/kit/${encodeURIComponent(kitId.toUpperCase())}`;
+        // Preserve case handling for navigation
+        window.location.href = `/kit/${encodeURIComponent(kitId)}`;
     }
 
     async function loadFirstAidItems() {
@@ -224,6 +224,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/kits/${currentKitId}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const kitData = await response.json();
+            
+            // Check if kit data is empty
+            if (!kitData.items || Object.keys(kitData.items).length === 0) {
+                console.log("Kit data empty, attempting in-memory fallback...");
+                await fallbackToMemorySearch(currentKitId);
+                return;
+            }
+
             allKitItems = [];
             Object.values(kitData.items).forEach(items => allKitItems.push(...items));
             renderItems(kitData.items);
@@ -240,6 +248,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Error loading items:', error);
+            await fallbackToMemorySearch(currentKitId);
+        }
+    }
+    
+    async function fallbackToMemorySearch(kitId) {
+        try {
+            const response = await fetch('/api/all_items');
+            if (!response.ok) return;
+            const allItems = await response.json();
+            
+            // Flatten items to search them
+            const allItemsList = [];
+            Object.values(allItems).forEach(items => allItemsList.push(...items));
+            
+            // Filter by kit_id
+            const filtered = allItemsList.filter(item => 
+                item.kit_id && item.kit_id.trim().toLowerCase() === kitId.trim().toLowerCase()
+            );
+            
+            if (filtered.length > 0) {
+                console.log("Fallback successful, found items in memory.");
+                // Group them back
+                const grouped = filtered.reduce((acc, item) => {
+                    const category = item.category || 'Uncategorized';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(item);
+                    return acc;
+                }, {});
+                renderItems(grouped);
+            } else {
+                itemList.innerHTML = '<p>Kit not found.</p>';
+            }
+        } catch (e) {
+            console.error("Memory fallback failed:", e);
+            itemList.innerHTML = '<p>Error loading kit.</p>';
         }
     }
 
