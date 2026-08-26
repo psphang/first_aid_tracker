@@ -64,10 +64,10 @@ def read_file(file_path):
     # Get the absolute path of the directory containing this script (api/)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Go up one level to the project root and then into 'public'
-    public_dir = os.path.join(script_dir, "..", "public")
+    # Go up one level to the project root
+    root_dir = os.path.join(script_dir, "..")
     
-    full_path = os.path.join(public_dir, file_path)
+    full_path = os.path.join(root_dir, file_path)
     
     # Log the path being checked for debugging
     print(f"[DEBUG] Attempting to read: {full_path}")
