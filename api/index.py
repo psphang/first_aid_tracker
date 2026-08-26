@@ -146,12 +146,16 @@ async def remove_item_from_kit_endpoint(kit_id: str, item_id: str):
 
 @app.get("/api/all_items")
 async def get_all_items():
-    grouped_items = await get_all_items_across_kits()
-    for category_items in grouped_items.values():
-        for item in category_items:
-            item['status'] = get_item_status(item)
-            item['Expiring'] = item.get('Expiring', 'No')
-    return grouped_items
+    try:
+        grouped_items = await get_all_items_across_kits()
+        for category_items in grouped_items.values():
+            for item in category_items:
+                item['status'] = get_item_status(item)
+                item['Expiring'] = item.get('Expiring', 'No')
+        return grouped_items
+    except Exception as e:
+        print(f"[!] Error fetching all items: {e}")
+        return {"items": {}, "error": str(e), "message": "Internal server error"}
 
 @app.post("/api/firstaiditems")
 async def add_first_aid_item_endpoint(item: Dict):
