@@ -61,10 +61,17 @@ def get_item_status(item):
     return "OK"
 
 def read_file(file_path):
-    # Based on the error, the current working directory is /var/task.
-    # The 'public' directory is at /var/task/public.
-    public_dir = os.path.join(os.getcwd(), "public")
+    # Get the absolute path of the directory containing this script (api/)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Go up one level to the project root and then into 'public'
+    public_dir = os.path.join(script_dir, "..", "public")
+    
     full_path = os.path.join(public_dir, file_path)
+    
+    # Log the path being checked for debugging
+    print(f"[DEBUG] Attempting to read: {full_path}")
+    
     try:
         with open(full_path, "r", encoding="utf-8") as f:
             return f.read()
