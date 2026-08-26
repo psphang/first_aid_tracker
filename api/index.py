@@ -1,5 +1,6 @@
 import asyncpg
 import os
+import urllib.parse
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
@@ -113,8 +114,9 @@ async def serve_kit_page(kit_id: str):
 
 @app.get("/api/kits/{kit_id}")
 async def get_kit_items_endpoint(kit_id: str):
+    decoded_kit_id = urllib.parse.unquote(kit_id).strip()
     try:
-        kit_data = await get_kit_items(kit_id)
+        kit_data = await get_kit_items(decoded_kit_id)
         # Check if database is offline (from db.py fallback)
         if kit_data.get("warning") == "Database offline":
             return kit_data
@@ -127,7 +129,7 @@ async def get_kit_items_endpoint(kit_id: str):
                 item['Expiring'] = item.get('Expiring', 'No')
         return kit_data
     except Exception as e:
-        print(f"[!] Error fetching kit {kit_id}: {e}")
+        print(f"[!] Error fetching kit {decoded_kit_id}: {e}")
         return {"items": {}, "error": str(e), "message": "Internal server error"}
 
 @app.post("/api/kits/{kit_id}")
