@@ -85,18 +85,22 @@ class DatabasePool:
 
 
 async def get_kit_id_by_name(conn, kit_id: str) -> Optional[str]:
-    """Helper to find the canonical kit ID case-insensitively and ignoring whitespace."""
-    # Debug log: print all kit codes
-    all_kits = await conn.fetch("SELECT kit_id FROM kits")
-    kit_codes = [row['kit_id'] for row in all_kits]
-    print(f"[DEBUG] Available kit codes: {kit_codes}")
-    
+    """Helper to find the canonical kit ID case-insensitively and ignoring whitespace, with exact match fallback."""
     clean_kit_id = kit_id.strip()
     
+    # 1. Try case-insensitive matching
     row = await conn.fetchrow(
         "SELECT kit_id FROM kits WHERE LOWER(TRIM(kit_id)) = LOWER($1)",
         clean_kit_id
     )
+    
+    # 2. Fallback to exact raw match
+    if not row:
+        row = await conn.fetchrow(
+            "SELECT kit_id FROM kits WHERE kit_id = $1",
+            clean_kit_id
+        )
+        
     return row['kit_id'] if row else None
 
 # Database query functions
