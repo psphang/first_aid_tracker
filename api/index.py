@@ -61,13 +61,15 @@ def get_item_status(item):
     return "OK"
 
 def read_file(file_path):
-    public_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public")
+    # Based on the error, the current working directory is /var/task.
+    # The 'public' directory is at /var/task/public.
+    public_dir = os.path.join(os.getcwd(), "public")
     full_path = os.path.join(public_dir, file_path)
     try:
         with open(full_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
-        print(f"Error reading file {full_path}: {e}")
+        print(f"[!] Error reading file {full_path}: {e}")
         return None
 
 # Ensure database is initialized on demand since Vercel functions are stateless
