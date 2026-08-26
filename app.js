@@ -152,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function enterKit() {
         const kitId = kitIdInput.value.trim();
-        console.log("Searching for kit:", kitId);
         if (!kitId) {
             alert('Please enter a Kit Box Code.');
             return;
